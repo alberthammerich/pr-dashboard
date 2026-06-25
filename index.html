@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR Dashboard · alberthammerich</title>
+<link rel="icon" href="https://avatars.githubusercontent.com/u/54889469?v=4" />
+<meta property="og:title" content="PR Dashboard · alberthammerich" />
+<meta property="og:description" content="Live open + recently-closed PRs with CI status, per repo." />
+<meta property="og:image" content="https://avatars.githubusercontent.com/u/54889469?v=4" />
+<meta name="twitter:card" content="summary" />
+<style>
+  :root {
+    --accent:#C5B8FF; --accent-soft:rgba(197,184,255,.16); --accent-line:rgba(197,184,255,.45);
+    --bg:#0b0a10; --bg2:#0f0e16; --panel:#16141f; --panel2:#1c1929; --border:#2a2740;
+    --text:#ece9f6; --muted:#9a93b5; --link:#C5B8FF;
+    --pass:#54d18c; --fail:#ff6b6b; --run:#f5c451; --neutral:#9a93b5;
+    --open:#54d18c; --merged:#C5B8FF; --closed:#ff6b6b;
+  }
+  * { box-sizing:border-box; }
+  html,body { background:var(--bg); }
+  body {
+    margin:0; color:var(--text);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(900px 380px at 12% -8%, rgba(197,184,255,.10), transparent 60%),
+      radial-gradient(700px 320px at 100% 0%, rgba(197,184,255,.06), transparent 55%),
+      var(--bg);
+    min-height:100vh;
+  }
+  a { color:var(--link); }
+  header {
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg, rgba(15,14,22,.96), rgba(15,14,22,.86)); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border); padding:14px 22px;
+  }
+  .brand { display:flex; align-items:center; gap:13px; }
+  .avatar { width:42px; height:42px; border-radius:50%; border:2px solid var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); object-fit:cover; }
+  .who { display:flex; flex-direction:column; line-height:1.25; }
+  .who .name { font-weight:700; font-size:16px; letter-spacing:.2px; }
+  .who .name b { color:var(--accent); font-weight:700; }
+  .who .sub { color:var(--muted); font-size:12px; }
+  .grow { flex:1; }
+  .hbtns { display:flex; align-items:center; gap:9px; }
+  .btn {
+    cursor:pointer; padding:7px 13px; border-radius:9px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text); font-size:13px; font-weight:600; transition:.15s;
+  }
+  .btn:hover { border-color:var(--accent-line); }
+  .btn.primary { background:var(--accent); color:#221b3a; border-color:var(--accent); }
+  .btn.primary:hover { filter:brightness(1.07); }
+  .btn[disabled] { opacity:.55; cursor:default; }
+  .toggle { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; cursor:pointer; user-select:none; }
+  .toggle input { accent-color:var(--accent); }
+  .controls { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  #q {
+    flex:1; min-width:240px; padding:9px 13px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px;
+  }
+  #q:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { cursor:pointer; user-select:none; padding:6px 11px; border-radius:999px; border:1px solid var(--border); background:var(--panel); color:var(--muted); font-size:12px; font-weight:600; transition:.12s; }
+  .chip:hover { color:var(--text); }
+  .chip.active { color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .counts { color:var(--muted); font-size:12px; margin-left:auto; white-space:nowrap; }
+  .counts b { color:var(--text); }
+  main { padding:18px 22px 70px; max-width:1140px; margin:0 auto; }
+  details.repo { margin-bottom:14px; border:1px solid var(--border); border-radius:13px; overflow:hidden; background:linear-gradient(180deg,var(--panel),var(--bg2)); }
+  details.repo > summary { cursor:pointer; padding:11px 15px; font-weight:700; list-style:none; display:flex; align-items:center; gap:10px; }
+  details.repo > summary::-webkit-details-marker { display:none; }
+  details.repo > summary::before { content:"▸"; color:var(--accent); transition:transform .15s; display:inline-block; }
+  details.repo[open] > summary::before { transform:rotate(90deg); }
+  .repo-count { color:var(--muted); font-weight:500; font-size:12px; }
+  .repo-badges { margin-left:auto; display:flex; gap:6px; font-size:12px; }
+  .pr { border-top:1px solid var(--border); }
+  details.pr > summary { cursor:pointer; padding:10px 15px; list-style:none; display:flex; align-items:center; gap:10px; }
+  details.pr > summary::-webkit-details-marker { display:none; }
+  details.pr[open] > summary { background:var(--panel2); }
+  .ci-dot { width:18px; text-align:center; flex:0 0 auto; font-size:13px; }
+  .pr-title { color:var(--text); text-decoration:none; font-weight:600; }
+  .pr-title:hover { color:var(--accent); text-decoration:underline; }
+  .pr-num { color:var(--muted); font-size:12px; }
+  .badge { font-size:11px; padding:1px 8px; border-radius:999px; border:1px solid var(--border); white-space:nowrap; font-weight:600; }
+  .b-open { color:var(--open); border-color:rgba(84,209,140,.5); }
+  .b-merged { color:var(--merged); border-color:var(--accent-line); }
+  .b-closed { color:var(--closed); border-color:rgba(255,107,107,.5); }
+  .b-draft { color:var(--muted); }
+  .b-review { color:var(--run); border-color:rgba(245,196,81,.5); }
+  .spacer { flex:1; }
+  .when { color:var(--muted); font-size:12px; white-space:nowrap; }
+  .stat { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+  .checks { padding:5px 15px 13px 42px; background:var(--bg2); }
+  .check { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:13px; }
+  .check a { text-decoration:none; }
+  .check a:hover { text-decoration:underline; }
+  .check .wf { color:var(--muted); }
+  .none { color:var(--muted); font-style:italic; }
+  .empty { color:var(--muted); text-align:center; padding:46px; }
+  .card { max-width:560px; margin:42px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:24px; }
+  .card h2 { margin:0 0 6px; font-size:18px; }
+  .card p { color:var(--muted); margin:6px 0 14px; }
+  .card label { display:block; font-size:12px; color:var(--muted); margin:12px 0 5px; font-weight:600; }
+  .card input { width:100%; padding:9px 12px; border-radius:9px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:13px; }
+  .card input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .row2 { display:flex; gap:12px; }
+  .row2 > div { flex:1; }
+  .card .actions { display:flex; gap:10px; margin-top:18px; align-items:center; }
+  .err { color:var(--fail); font-size:13px; margin-top:10px; min-height:18px; }
+  .hint { font-size:11.5px; color:var(--muted); margin-top:8px; }
+  .hint code { background:var(--bg2); border:1px solid var(--border); padding:1px 5px; border-radius:5px; }
+  .spin { display:inline-block; animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img class="avatar" src="https://avatars.githubusercontent.com/u/54889469?v=4" alt="" />
+    <div class="who">
+      <span class="name"><b>alberthammerich</b> · PR Dashboard</span>
+      <span class="sub">open + closed &lt; <span id="hrslabel">48</span>h · <span id="age">—</span></span>
+    </div>
+    <span class="grow"></span>
+    <div class="hbtns">
+      <button class="btn primary" id="refresh">🔄 Refresh</button>
+      <label class="toggle"><input type="checkbox" id="auto" /> auto 60s</label>
+      <button class="btn" id="settings" title="Token & settings">⚙︎</button>
+    </div>
+  </div>
+  <div class="controls" id="controls" style="display:none">
+    <input id="q" type="search" placeholder="Search title, repo, branch, #number…   (press / to focus)" />
+    <div class="chips" id="chips">
+      <span class="chip active" data-f="all">All</span>
+      <span class="chip" data-f="open">Open</span>
+      <span class="chip" data-f="closed">Closed/Merged</span>
+      <span class="chip" data-f="failing">CI failing</span>
+      <span class="chip" data-f="running">CI running</span>
+    </div>
+    <span class="counts" id="counts"></span>
+  </div>
+</header>
+<main id="main"></main>
+
+<script>
+const LS = { token:"prdash_token", author:"prdash_author", hours:"prdash_hours" };
+const AUTHOR_DEFAULT = "alberthammerich";
+const HOURS_DEFAULT = 48;
+
+const get = (k, d) => localStorage.getItem(k) ?? d;
+let DB = null, activeFilter = "all";
+
+const ICON = { pass:"✅", fail:"❌", running:"🟡", skip:"⚪", none:"·", other:"⚪" };
+const CIICON = { pass:"✅", fail:"❌", running:"🟡", none:"·" };
+
+function rel(iso){ if(!iso) return ""; const d=(Date.now()-new Date(iso).getTime())/1000,m=60,h=3600,day=86400;
+  if(d<0) return "just now"; if(d<m) return Math.floor(d)+"s ago"; if(d<h) return Math.floor(d/m)+"m ago"; if(d<day) return Math.floor(d/h)+"h ago"; return Math.floor(d/day)+"d ago"; }
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ---------- GitHub REST (client-side, with your token) ---------- */
+function api(path){
+  const token = get(LS.token, "");
+  return fetch("https://api.github.com"+path, {
+    headers:{ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" },
+    cache:"no-store",
+  }).then(async r=>{
+    if(r.status===401) throw new Error("Bad token (401) — open ⚙︎ and re-enter it.");
+    if(r.status===403){ const b=await r.text(); throw new Error("Rate limited / forbidden (403). "+(b.includes("rate")?"Wait a minute.":"")); }
+    if(!r.ok) throw new Error("GitHub "+r.status+" on "+path);
+    return r.json();
+  });
+}
+async function pool(items, n, fn){
+  const out=new Array(items.length); let i=0;
+  await Promise.all(Array.from({length:Math.min(n,items.length)||1}, async()=>{
+    while(i<items.length){ const idx=i++; try{ out[idx]=await fn(items[idx],idx); }catch(e){ out[idx]={__err:String(e.message||e)}; } }
+  }));
+  return out;
+}
+function normChecks(runs, statuses){
+  const out=[];
+  for(const c of (runs||[])){
+    let status;
+    if((c.status||"").toUpperCase()!=="COMPLETED") status="running";
+    else { const k=(c.conclusion||"").toUpperCase();
+      status = k==="SUCCESS"?"pass" : (k==="NEUTRAL"||k==="SKIPPED")?"skip" : "fail"; }
+    out.push({ status, name:c.name||"check", workflow:(c.app&&c.app.name)||"", url:c.details_url||c.html_url||"" });
+  }
+  for(const s of (statuses||[])){
+    const k=(s.state||"").toUpperCase();
+    const status = k==="SUCCESS"?"pass" : k==="PENDING"?"running" : (k==="FAILURE"||k==="ERROR")?"fail":"other";
+    out.push({ status, name:s.context||"status", workflow:"", url:s.target_url||"" });
+  }
+  return out;
+}
+function rollup(checks){ if(!checks.length) return "none";
+  if(checks.some(c=>c.status==="fail")) return "fail";
+  if(checks.some(c=>c.status==="running")) return "running";
+  if(checks.some(c=>c.status==="pass")) return "pass"; return "none"; }
+
+async function enrich(item){
+  const repo = item.repository_url.replace("https://api.github.com/repos/","");
+  const [owner, name] = repo.split("/");
+  const merged = !!(item.pull_request && item.pull_request.merged_at);
+  let state = item.state==="open" ? "OPEN" : (merged ? "MERGED" : "CLOSED");
+  let branch="", sha="", additions=null, deletions=null, comments=null, draft=!!item.draft, review="";
+  try {
+    const pr = await api("/repos/"+repo+"/pulls/"+item.number);
+    sha=pr.head&&pr.head.sha; branch=(pr.head&&pr.head.ref)||""; draft=!!pr.draft;
+    additions=pr.additions; deletions=pr.deletions; comments=pr.comments;
+    if((pr.requested_reviewers&&pr.requested_reviewers.length)||(pr.requested_teams&&pr.requested_teams.length)) review="REVIEW_REQUIRED";
+  } catch(e){}
+  let checks=[];
+  if(sha){
+    const [cr, st] = await Promise.all([
+      api("/repos/"+repo+"/commits/"+sha+"/check-runs?per_page=100").then(r=>r.check_runs).catch(()=>[]),
+      api("/repos/"+repo+"/commits/"+sha+"/status").then(r=>r.statuses).catch(()=>[]),
+    ]);
+    checks = normChecks(cr, st);
+  }
+  return { number:item.number, title:item.title, url:item.html_url, repo, state, isDraft:draft,
+    reviewDecision:review, branch, additions, deletions, comments,
+    createdAt:item.created_at, updatedAt:item.updated_at, closedAt:item.closed_at||null,
+    ci:rollup(checks), checks };
+}
+async function collect(){
+  const author = get(LS.author, AUTHOR_DEFAULT);
+  const hours = Number(get(LS.hours, HOURS_DEFAULT));
+  const cutoff = Date.now() - hours*3600*1000;
+  const sinceDay = new Date(cutoff).toISOString().slice(0,10);
+  const q = s => "/search/issues?per_page=60&sort=updated&order=desc&q=" + encodeURIComponent(s);
+  const [open, closed] = await Promise.all([
+    api(q(`author:${author} type:pr state:open`)).then(r=>r.items),
+    api(q(`author:${author} type:pr state:closed closed:>=${sinceDay}`)).then(r=>r.items),
+  ]);
+  const recentClosed = closed.filter(p=>p.closed_at && new Date(p.closed_at).getTime()>=cutoff);
+  const prs = await pool([...open, ...recentClosed], 6, enrich);
+  return { prs, generatedAt:new Date().toISOString(), author, hours };
+}
+
+/* ---------- render ---------- */
+function stateBadge(pr){ if(pr.state==="MERGED")return '<span class="badge b-merged">merged</span>';
+  if(pr.state==="CLOSED")return '<span class="badge b-closed">closed</span>';
+  if(pr.isDraft)return '<span class="badge b-draft">draft</span>'; return '<span class="badge b-open">open</span>'; }
+function reviewBadge(pr){ return (pr.state==="OPEN"&&pr.reviewDecision==="REVIEW_REQUIRED")?'<span class="badge b-review">review</span>':""; }
+function matches(pr, term){
+  if(activeFilter==="open"&&pr.state!=="OPEN") return false;
+  if(activeFilter==="closed"&&pr.state==="OPEN") return false;
+  if(activeFilter==="failing"&&pr.ci!=="fail") return false;
+  if(activeFilter==="running"&&pr.ci!=="running") return false;
+  if(!term) return true;
+  const hay=(pr.title+" "+pr.repo+" "+pr.branch+" #"+pr.number).toLowerCase();
+  return term.split(/\s+/).every(t=>hay.includes(t));
+}
+function render(){
+  if(!DB) return;
+  const term=document.getElementById("q").value.trim().toLowerCase();
+  const main=document.getElementById("main"); const byRepo={}; let shown=0;
+  for(const pr of DB.prs){ if(!matches(pr,term)) continue; (byRepo[pr.repo]||=[]).push(pr); shown++; }
+  const repos=Object.keys(byRepo).sort(); main.innerHTML="";
+  if(!repos.length){ main.innerHTML='<div class="empty">No PRs match.</div>'; updateCounts(0); return; }
+  const expandFail=!!term||activeFilter!=="all";
+  for(const repo of repos){
+    const list=byRepo[repo].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+    const fail=list.filter(p=>p.ci==="fail").length, run=list.filter(p=>p.ci==="running").length;
+    const d=document.createElement("details"); d.className="repo"; d.open=true;
+    let badges=""; if(fail)badges+='<span class="badge b-closed">'+fail+' ❌</span>'; if(run)badges+='<span class="badge b-review">'+run+' 🟡</span>';
+    d.innerHTML='<summary>'+esc(repo)+' <span class="repo-count">'+list.length+'</span><span class="repo-badges">'+badges+'</span></summary>';
+    for(const pr of list){
+      const pd=document.createElement("details"); pd.className="pr"; pd.open=expandFail&&(pr.ci==="fail"||activeFilter==="failing");
+      let checksHtml;
+      if(!pr.checks.length){ checksHtml='<div class="none">No CI checks.</div>'; }
+      else { const order={fail:0,running:1,pass:2,skip:3,other:4};
+        checksHtml=pr.checks.slice().sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).map(c=>
+          '<div class="check">'+(ICON[c.status]||"·")+' '
+          +(c.url?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.name)+'</a>':esc(c.name))
+          +(c.workflow?' <span class="wf">· '+esc(c.workflow)+'</span>':'')+'</div>').join(""); }
+      const stats=(pr.additions!=null)?'<span class="stat">+'+pr.additions+' −'+pr.deletions+'</span>':'';
+      pd.innerHTML='<summary><span class="ci-dot" title="CI: '+pr.ci+'">'+(CIICON[pr.ci]||"·")+'</span>'
+        +'<a class="pr-title" href="'+esc(pr.url)+'" target="_blank" rel="noopener">'+esc(pr.title)+'</a>'
+        +'<span class="pr-num">#'+pr.number+(pr.branch?' · '+esc(pr.branch):'')+'</span>'
+        +stateBadge(pr)+reviewBadge(pr)+'<span class="spacer"></span>'+stats
+        +'<span class="when">'+rel(pr.state==="OPEN"?pr.updatedAt:pr.closedAt)+'</span></summary>'
+        +'<div class="checks">'+checksHtml+'</div>';
+      d.appendChild(pd);
+    }
+    main.appendChild(d);
+  }
+  updateCounts(shown);
+}
+function updateCounts(shown){
+  if(!DB){ document.getElementById("counts").textContent=""; return; }
+  const t=DB.prs.length, fail=DB.prs.filter(p=>p.ci==="fail").length, run=DB.prs.filter(p=>p.ci==="running").length;
+  document.getElementById("counts").innerHTML="<b>"+shown+"</b> / "+t+" PRs"+(fail?" · <b>"+fail+"</b> failing":"")+(run?" · <b>"+run+"</b> running":"");
+  document.getElementById("age").textContent="updated "+rel(DB.generatedAt);
+  document.getElementById("hrslabel").textContent=DB.hours;
+}
+
+/* ---------- settings / token gate ---------- */
+function showSettings(force){
+  const author=get(LS.author,AUTHOR_DEFAULT), hours=get(LS.hours,HOURS_DEFAULT), hasTok=!!get(LS.token,"");
+  document.getElementById("main").innerHTML =
+    '<div class="card"><h2>'+(hasTok&&!force?"Settings":"Connect your GitHub")+'</h2>'
+    +'<p>This page runs entirely in your browser and stores your token only in <code>localStorage</code> on this device. Nothing is sent anywhere except GitHub.</p>'
+    +'<label>GitHub token (classic, <code>repo</code> scope)</label>'
+    +'<input id="tok" type="password" placeholder="ghp_…" value="'+esc(get(LS.token,""))+'" />'
+    +'<div class="row2"><div><label>Author</label><input id="auth" value="'+esc(author)+'" /></div>'
+    +'<div><label>Closed window (hours)</label><input id="hrs" type="number" value="'+esc(String(hours))+'" /></div></div>'
+    +'<div class="actions"><button class="btn primary" id="save">Save & load</button>'
+    +(hasTok?'<button class="btn" id="clear">Clear token</button>':"")+'<span class="err" id="serr"></span></div>'
+    +'<div class="hint">Create one: <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">github.com/settings/tokens/new</a> → tick <b>repo</b> → Generate. '
+    +'For your Teton-ai org PRs, click <b>Configure SSO</b> on the token and authorize it. The token is read-only used here.</div></div>';
+  document.getElementById("save").onclick=()=>{
+    const tv=document.getElementById("tok").value.trim();
+    if(!tv){ document.getElementById("serr").textContent="Enter a token."; return; }
+    localStorage.setItem(LS.token,tv);
+    localStorage.setItem(LS.author,document.getElementById("auth").value.trim()||AUTHOR_DEFAULT);
+    localStorage.setItem(LS.hours,String(Number(document.getElementById("hrs").value)||HOURS_DEFAULT));
+    document.getElementById("controls").style.display="";
+    load();
+  };
+  const clr=document.getElementById("clear"); if(clr) clr.onclick=()=>{ localStorage.removeItem(LS.token); DB=null; showSettings(true); document.getElementById("controls").style.display="none"; };
+}
+
+/* ---------- load ---------- */
+async function load(){
+  if(!get(LS.token,"")){ showSettings(true); return; }
+  const btn=document.getElementById("refresh"); const age=document.getElementById("age");
+  btn.disabled=true; btn.innerHTML='<span class="spin">⟳</span> Refreshing…';
+  if(!DB){ document.getElementById("main").innerHTML='<div class="empty"><span class="spin">⟳</span> Loading your PRs…</div>'; }
+  document.getElementById("controls").style.display="";
+  try{ DB=await collect(); render(); }
+  catch(e){
+    document.getElementById("main").innerHTML='<div class="card"><h2>Couldn’t load</h2><p class="err">'+esc(String(e.message||e))+'</p><div class="actions"><button class="btn primary" onclick="showSettings(true)">Open settings</button></div></div>';
+  }
+  finally{ btn.disabled=false; btn.innerHTML="🔄 Refresh"; }
+}
+
+document.addEventListener("input", e=>{ if(e.target.id==="q") render(); });
+document.getElementById("chips").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(!c)return;
+  activeFilter=c.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===c)); render(); });
+document.getElementById("refresh").addEventListener("click", load);
+document.getElementById("settings").addEventListener("click", ()=>showSettings(true));
+let timer=null;
+document.getElementById("auto").addEventListener("change", e=>{ if(e.target.checked){ timer=setInterval(load,60000); } else clearInterval(timer); });
+document.addEventListener("keydown", e=>{ const q=document.getElementById("q"); if(e.key==="/"&&document.activeElement!==q&&q.offsetParent){ e.preventDefault(); q.focus(); } });
+
+if(get(LS.token,"")) load(); else showSettings(true);
+</script>
+</body>
+</html>
