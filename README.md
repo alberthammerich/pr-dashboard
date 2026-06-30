@@ -1,4 +1,6 @@
-❀࿐PR Dashboard𓆝 𓆟 𓆞 𓆝 𓆟
+![PR Dashboard — see every PR you’re shipping, and whether it’s green](./banner.jpg)
+
+# PR Dashboard
 
 A private, open-source dashboard for the GitHub pull requests **you're working on** — every PR
 you've authored that's still **open**, plus everything you **closed/merged in the last 48 hours** —
@@ -19,13 +21,13 @@ open and just-closed PRs with their CI status. So I made it.
 ## Features
 
 - **Self-personalizing** — paste your token and it picks up *your* username, avatar, and PRs.
-- **Per-repo grouping** with at-a-glance failing/running badges.
-- **Live CI** per PR (✅ pass · ❌ fail · 🟡 running) — click a PR to expand every individual
-  check with links to its run.
-- **Instant search** across title / repo / branch / `#number`, plus filter chips
-  (Open · Closed/Merged · CI failing · CI running).
-- **🔄 Refresh** + optional **auto-refresh** every 60s.
-- Open + closed-in-48h window (configurable in ⚙︎ Settings).
+- **At-a-glance summary** — big-number cards for open, closed-in-48h, CI failing, and running.
+- **Per-repo grouping** with failing/running badges on each repo.
+- **Live CI** per PR (✅ pass · ❌ fail · 🟡 running) — expand any PR to see every check, linked to its run.
+- **Instant search** across title / repo / branch / `#number`, plus filter chips (open · closed · failing · running).
+- **Six color themes** — orange, blue, green, gold, lavender, coral — switch live on the page or in ⚙︎ Settings.
+- **One-click deploy** to your own GitHub (see below), plus **Refresh** and optional **auto-refresh** every 60s.
+- Closed-PR window configurable in ⚙︎ Settings (default 48h).
 
 ## Use it
 
