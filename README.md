@@ -72,6 +72,11 @@ On connect, the page calls `GET /user` to learn who you are, then uses the GitHu
 The GitHub **GraphQL** API isn't usable here because it doesn't send CORS headers to browsers, so
 this uses the REST API throughout.
 
+## Credits
+
+Display type is [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif) by Rodrigo
+Fuenzalida & Jonny Pinhorn, embedded under the [SIL Open Font License 1.1](./INSTRUMENT_SERIF_OFL.txt).
+
 ## License
 
 [MIT](./LICENSE)
