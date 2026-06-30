@@ -499,8 +499,18 @@ async function deployFlow(){
     await ghRaw("/repos/"+owner+"/"+repo+"/pages", {method:"POST", body:{ source:{ branch, path:"/" } }});
     const url="https://"+owner+".github.io/"+repo+"/";
     set("Waiting for the first Pages build (~1 min)…");
-    await waitBuild(owner,repo);
-    $("dstatus").innerHTML='✅ <b>Deployed!</b> Your dashboard lives at <a href="'+url+'" target="_blank" rel="noopener"><b>'+esc(owner)+'.github.io/pr-dashboard/</b></a>. Open it and paste your token once there (new domain) — then it’s all yours.';
+    const built=await waitBuild(owner,repo);
+    $("dstatus").innerHTML =
+      '<div style="margin-top:8px;padding:15px;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:13px">'
+      +'✅ <b>Deployed'+(built?'':' — building')+'!</b> Your own dashboard '+(built?'is live':'will be live in ~1 min')+' at:'
+      +'<div style="margin-top:7px"><a href="'+url+'" target="_blank" rel="noopener" class="mono" style="font-size:13.5px;word-break:break-all">'+esc(owner)+'.github.io/pr-dashboard/</a></div>'
+      +'<div class="row" style="margin-top:13px">'
+        +'<a class="btn primary" href="'+url+'" target="_blank" rel="noopener">Open my dashboard →</a>'
+        +'<button class="btn" id="copyUrl">Copy URL</button>'
+      +'</div>'
+      +'<div class="help" style="margin-top:11px">You’ll paste your token once there (it’s a new domain) — then it’s all yours, on your own GitHub.</div>'
+      +'</div>';
+    const cp=$("copyUrl"); if(cp) cp.onclick=()=>{ navigator.clipboard.writeText(url).then(()=>{ cp.textContent="Copied ✓"; setTimeout(()=>{ cp.textContent="Copy URL"; },1800); }); };
   }catch(e){ $("dstatus").textContent=""; $("lerr").textContent=String(e.message||e); }
   finally{ dbtn.disabled=false; cbtn.disabled=false; }
 }
