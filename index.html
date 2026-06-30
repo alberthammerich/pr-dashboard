@@ -73,7 +73,8 @@
   .counts { color:var(--muted); font-size:12px; margin-left:auto; white-space:nowrap; font-family:var(--mono); }
   .counts b { color:var(--text); }
 
-  main { padding:8px 22px 24px; max-width:1080px; margin:0 auto; }
+  main { padding:8px 22px 24px; max-width:min(1180px,94vw); margin:0 auto; }
+  .landing { min-height:calc(100vh - 96px); min-height:calc(100svh - 96px); display:flex; flex-direction:column; justify-content:center; }
 
   /* big-number stat cards */
   .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:13px; margin:4px 0 20px; }
@@ -124,16 +125,16 @@
   .empty { color:var(--muted); text-align:center; padding:46px; }
 
   /* landing */
-  .hero { max-width:720px; margin:16px auto 0; text-align:center; }
-  .hero .kicker { display:block; margin-bottom:10px; }
-  .display { font-family:var(--serif); font-weight:400; font-size:clamp(28px,4.4vw,44px); line-height:1.03; letter-spacing:0; margin:0; }
+  .hero { max-width:min(800px,92vw); margin:0 auto; text-align:center; }
+  .hero .kicker { display:block; margin-bottom:clamp(8px,1.4vh,16px); font-size:clamp(12px,1.05vw,15px); }
+  .display { font-family:var(--serif); font-weight:400; font-size:clamp(32px,min(5.6vw,7.6vh),76px); line-height:1.02; letter-spacing:0; margin:0; }
   .display .it { font-style:italic; color:var(--accent-ink); }
-  .lead { font-size:14.5px; line-height:1.5; color:var(--muted); max-width:560px; margin:11px auto 0; }
+  .lead { font-size:clamp(14.5px,min(1.55vw,2.1vh),20px); line-height:1.5; color:var(--muted); max-width:min(600px,92vw); margin:clamp(10px,1.7vh,20px) auto 0; }
   .lead b { color:var(--text); font-weight:650; }
-  .pickrow { max-width:720px; margin:16px auto 0; display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+  .pickrow { max-width:min(800px,92vw); margin:clamp(14px,2.2vh,28px) auto 0; display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
   .pickrow .lbl { font-family:var(--mono); font-size:12px; color:var(--faint); }
 
-  .connect { max-width:640px; margin:16px auto 0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow); }
+  .connect { max-width:min(700px,92vw); margin:clamp(14px,2.2vh,28px) auto 0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:clamp(16px,1.8vw,26px); box-shadow:var(--shadow); }
   .connect .lbl { font-family:var(--mono); font-size:12.5px; color:var(--muted); margin:0 0 9px; display:block; }
   .connect .row { display:flex; gap:10px; flex-wrap:wrap; }
   .connect input { flex:1; min-width:230px; padding:12px 14px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); font:14px var(--mono); }
@@ -154,7 +155,7 @@
   ol.steps li { position:relative; padding:0 0 9px 38px; color:var(--muted); font-size:13.5px; line-height:1.55; }
   ol.steps li::before { counter-increment:s; content:counter(s); position:absolute; left:0; top:-2px; width:25px; height:25px; border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent-ink); font:700 12px var(--mono); display:grid; place-items:center; }
   ol.steps b, .info .safe b { color:var(--text); }
-  .started { max-width:540px; margin:22px auto 0; }
+  .started { max-width:min(580px,92vw); margin:clamp(18px,2.6vh,34px) auto 0; }
   .started > .kicker { display:block; margin-bottom:11px; }
   .safe-toggle { margin-top:16px; border-top:1px solid var(--line); padding-top:13px; }
   .safe-toggle summary { cursor:pointer; list-style:none; color:var(--muted); font-size:13.5px; line-height:1.55; }
@@ -165,7 +166,7 @@
   .safe-toggle li { color:var(--muted); font-size:13px; line-height:1.55; margin:0 0 10px; padding-left:18px; position:relative; }
   .safe-toggle li::before { content:""; position:absolute; left:0; top:8px; width:6px; height:6px; border-radius:50%; background:var(--accent); }
   .safe-toggle b { color:var(--text); }
-  .foot { max-width:860px; margin:18px auto 0; text-align:center; color:var(--faint); font-size:12px; font-family:var(--mono); }
+  .foot { max-width:860px; margin:clamp(16px,2.4vh,32px) auto 0; text-align:center; color:var(--faint); font-size:12px; font-family:var(--mono); }
   .dstatus { margin-top:8px; font-size:13px; }
 
   .spin { display:inline-block; animation:spin 1s linear infinite; }
@@ -392,7 +393,7 @@ function showLanding(errMsg){
   $("refresh").classList.add("hide"); $("autoWrap").classList.add("hide"); $("settings").classList.add("hide");
   $("controls").classList.add("hide"); $("srcLink").classList.remove("hide");
   $("main").innerHTML =
-    '<div class="hero rise"><span class="kicker">// the PR overview GitHub forgot to build</span>'
+    '<div class="landing"><div class="hero rise"><span class="kicker">// the PR overview GitHub forgot to build</span>'
     +'<h1 class="display">See every PR you’re shipping.<br><span class="it">And whether it’s green.</span></h1>'
     +'<p class="lead"><b>Your open pull requests, plus anything you merged or closed in the last 48 hours</b> — sorted by repo, each with its CI checks a click away. It runs in your browser on your own token. Nothing lives on a server.</p></div>'
     +'<div class="pickrow rise"><span class="lbl">// make it yours</span><div class="swatches" id="swatches">'+swatchRow()+'</div></div>'
@@ -417,7 +418,7 @@ function showLanding(errMsg){
         +'<li><b>Read-only and reversible</b> — it never writes to your repos, and Sign out wipes the token.</li>'
       +'</ul></details>'
     +'</div>'
-    +'<div class="foot">built because GitHub’s PR list deserved better — <a id="srcLink3" href="#" target="_blank" rel="noopener">read the code</a></div>';
+    +'<div class="foot">built because GitHub’s PR list deserved better — <a id="srcLink3" href="#" target="_blank" rel="noopener">read the code</a></div></div>';
   ["srcLink","srcLink2","srcLink3"].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
   const go=()=>{ const tv=$("tok").value.trim(); if(!tv){ $("lerr").textContent="Paste your token first."; return; } localStorage.setItem(LS.token, tv); connectAndLoad(); };
   $("connect").onclick=go; $("deploy").onclick=deployFlow;
