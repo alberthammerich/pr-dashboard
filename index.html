@@ -154,6 +154,17 @@
   ol.steps li { position:relative; padding:0 0 15px 38px; color:var(--muted); font-size:13.5px; line-height:1.55; }
   ol.steps li::before { counter-increment:s; content:counter(s); position:absolute; left:0; top:-2px; width:25px; height:25px; border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent-ink); font:700 12px var(--mono); display:grid; place-items:center; }
   ol.steps b, .info .safe b { color:var(--text); }
+  .started { max-width:540px; margin:44px auto 0; }
+  .started > .kicker { display:block; margin-bottom:16px; }
+  .safe-toggle { margin-top:24px; border-top:1px solid var(--line); padding-top:18px; }
+  .safe-toggle summary { cursor:pointer; list-style:none; color:var(--muted); font-size:13.5px; line-height:1.55; }
+  .safe-toggle summary::-webkit-details-marker { display:none; }
+  .safe-toggle summary b { color:var(--accent-ink); white-space:nowrap; }
+  .safe-toggle[open] summary { margin-bottom:14px; }
+  .safe-toggle ul { margin:0; padding:0; list-style:none; }
+  .safe-toggle li { color:var(--muted); font-size:13px; line-height:1.55; margin:0 0 10px; padding-left:18px; position:relative; }
+  .safe-toggle li::before { content:""; position:absolute; left:0; top:8px; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .safe-toggle b { color:var(--text); }
   .foot { max-width:860px; margin:42px auto 0; text-align:center; color:var(--faint); font-size:12px; font-family:var(--mono); }
   .dstatus { margin-top:8px; font-size:13px; }
 
@@ -392,18 +403,19 @@ function showLanding(errMsg){
     +'</div>'
     +'<div class="help"><b>Connect</b> runs it right here. <b>Deploy</b> publishes your own copy to <code>you.github.io/pr-dashboard</code> and hands you the link. Both want a token with the <code>repo</code> scope — tracking only public repos? a no-scope token is plenty.</div>'
     +'<div class="err" id="lerr">'+(errMsg?esc(errMsg):"")+'</div><div class="dstatus" id="dstatus"></div></div>'
-    +'<div class="info rise">'
-      +'<div class="safe"><span class="kicker">// why you can trust it</span><ul>'
-        +'<li><b>No server sits in the middle.</b> The page is static and talks only to <code>api.github.com</code> — there’s nothing to log you.</li>'
-        +'<li><b>Your token stays put.</b> It’s kept in this browser’s storage and sent to no one but GitHub, over HTTPS.</li>'
-        +'<li><b>Read the whole thing.</b> One open-source file, no dependencies, no analytics — <a id="srcLink2" href="#" target="_blank" rel="noopener">here’s the source</a>.</li>'
-        +'<li><b>Read-only and reversible.</b> It never touches your repos, and Sign out wipes the token instantly.</li>'
-      +'</ul></div>'
-      +'<div><span class="kicker">// up and running in a minute</span><ol class="steps">'
+    +'<div class="started rise">'
+      +'<span class="kicker">// up and running in a minute</span>'
+      +'<ol class="steps">'
         +'<li><b>Make a token</b> at <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">github.com/settings/tokens/new</a> — check <code>repo</code>, set it to never expire.</li>'
         +'<li><b>Behind org SSO?</b> Click <b>Configure SSO</b> on the token and authorize it.</li>'
         +'<li><b>Paste it and Connect.</b> This browser keeps it — you’re done for good.</li>'
-      +'</ol></div>'
+      +'</ol>'
+      +'<details class="safe-toggle"><summary>Runs entirely in your browser, and your token never leaves this device. <b>Why it’s safe →</b></summary><ul>'
+        +'<li><b>No server in the middle.</b> The page is static and talks only to <code>api.github.com</code> — nothing to log you.</li>'
+        +'<li><b>Your token stays put</b> — kept in this browser, sent to no one but GitHub over HTTPS.</li>'
+        +'<li><b>Read the whole thing</b> — one open-source file, no dependencies, no analytics. <a id="srcLink2" href="#" target="_blank" rel="noopener">The source.</a></li>'
+        +'<li><b>Read-only and reversible</b> — it never writes to your repos, and Sign out wipes the token.</li>'
+      +'</ul></details>'
     +'</div>'
     +'<div class="foot">built because GitHub’s PR list deserved better — <a id="srcLink3" href="#" target="_blank" rel="noopener">read the code</a></div>';
   ["srcLink","srcLink2","srcLink3"].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
