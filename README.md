@@ -1,4 +1,4 @@
-#  🪶𓂃PR Dashboard𓂃🪶
+# 🔭 PR Dashboard
 
 A private, open-source dashboard for the GitHub pull requests **you're working on** — every PR
 you've authored that's still **open**, plus everything you **closed/merged in the last 48 hours** —
@@ -9,7 +9,12 @@ entirely in your browser and talks only to the GitHub API.
 
 👉 **Live:** https://alberthammerich.github.io/pr-dashboard/
 
-![PR Dashboard](https://avatars.githubusercontent.com/u/54889469?v=4)
+## Why I built this
+
+Because GitHub's own PR search and "your pull requests" overview are, frankly, shit — scattered
+across tabs, no live CI at a glance, no clean per-repo grouping, and no single place to see
+*everything you're currently working on*. I wanted one fast, searchable page that just shows me my
+open and just-closed PRs with their CI status. So I made it.
 
 ## Features
 
@@ -43,15 +48,21 @@ entirely in your browser and talks only to the GitHub API.
 - **Revoke anytime** at [github.com/settings/tokens](https://github.com/settings/tokens), or click
   **Sign out** in the app to wipe it from your browser.
 
-## Run it yourself / fork it
+## Host your own copy
 
-It's just one file. Either:
+Three ways, easiest first:
 
-- **Fork & host:** fork this repo, enable **GitHub Pages** (Settings → Pages → branch root), and
-  your own copy is live at `https://<you>.github.io/pr-dashboard/`. Update `REPO_URL` near the top
-  of the `<script>` in `index.html` to point at your fork.
+- **One-click "Deploy to my GitHub"** *(recommended)* — on the live page, paste your token and hit
+  **🚀 Deploy to my GitHub**. It uses your token to create a `pr-dashboard` repo on **your** account,
+  upload the page, and turn on GitHub Pages — then hands you your own URL at
+  `https://<you>.github.io/pr-dashboard/`. (Needs the `repo` scope.)
+- **Fork & host manually:** fork this repo, enable **GitHub Pages** (Settings → Pages → branch root),
+  and it's live at `https://<you>.github.io/pr-dashboard/`.
 - **Run locally:** open `index.html` directly in a browser, or `python3 -m http.server` in the repo
   and visit the printed URL.
+
+Once your copy is live, you paste your token there once (it lives in *your* browser, on *your*
+origin) and never again.
 
 ## How it works
 
