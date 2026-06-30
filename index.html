@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PR Dashboard · alberthammerich</title>
-<link rel="icon" href="https://avatars.githubusercontent.com/u/54889469?v=4" />
-<meta property="og:title" content="PR Dashboard · alberthammerich" />
-<meta property="og:description" content="Live open + recently-closed PRs with CI status, per repo." />
-<meta property="og:image" content="https://avatars.githubusercontent.com/u/54889469?v=4" />
+<title>PR Dashboard</title>
+<link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%AD%3C/text%3E%3C/svg%3E" />
+<meta name="description" content="A private, open-source dashboard for your open + recently-closed GitHub PRs with live CI status. Runs entirely in your browser." />
+<meta property="og:title" content="PR Dashboard" />
+<meta property="og:description" content="Your open + recently-closed PRs with live CI status — private, client-side, open source." />
 <meta name="twitter:card" content="summary" />
 <style>
   :root {
@@ -35,7 +35,8 @@
     border-bottom:1px solid var(--border); padding:14px 22px;
   }
   .brand { display:flex; align-items:center; gap:13px; }
-  .avatar { width:42px; height:42px; border-radius:50%; border:2px solid var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); object-fit:cover; }
+  .avatar { width:42px; height:42px; border-radius:50%; border:2px solid var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); object-fit:cover; background:var(--panel); }
+  .logo { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-size:22px; background:var(--accent-soft); border:1px solid var(--accent-line); }
   .who { display:flex; flex-direction:column; line-height:1.25; }
   .who .name { font-weight:700; font-size:16px; letter-spacing:.2px; }
   .who .name b { color:var(--accent); font-weight:700; }
@@ -44,7 +45,7 @@
   .hbtns { display:flex; align-items:center; gap:9px; }
   .btn {
     cursor:pointer; padding:7px 13px; border-radius:9px; border:1px solid var(--border);
-    background:var(--panel); color:var(--text); font-size:13px; font-weight:600; transition:.15s;
+    background:var(--panel); color:var(--text); font-size:13px; font-weight:600; transition:.15s; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
   }
   .btn:hover { border-color:var(--accent-line); }
   .btn.primary { background:var(--accent); color:#221b3a; border-color:var(--accent); }
@@ -96,38 +97,58 @@
   .check .wf { color:var(--muted); }
   .none { color:var(--muted); font-style:italic; }
   .empty { color:var(--muted); text-align:center; padding:46px; }
-  .card { max-width:560px; margin:42px auto; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:24px; }
-  .card h2 { margin:0 0 6px; font-size:18px; }
-  .card p { color:var(--muted); margin:6px 0 14px; }
-  .card label { display:block; font-size:12px; color:var(--muted); margin:12px 0 5px; font-weight:600; }
-  .card input { width:100%; padding:9px 12px; border-radius:9px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:13px; }
-  .card input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-  .row2 { display:flex; gap:12px; }
-  .row2 > div { flex:1; }
-  .card .actions { display:flex; gap:10px; margin-top:18px; align-items:center; }
+  /* landing */
+  .hero { max-width:680px; margin:38px auto 0; text-align:center; }
+  .hero .logo { width:64px; height:64px; border-radius:18px; font-size:34px; margin:0 auto 16px; }
+  .hero h1 { font-size:30px; margin:0 0 8px; letter-spacing:-.3px; }
+  .hero h1 b { color:var(--accent); }
+  .hero p.tag { color:var(--muted); font-size:15px; margin:0 auto; max-width:520px; }
+  .grid { max-width:880px; margin:30px auto 0; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:760px){ .grid { grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:22px; }
+  .card h2 { margin:0 0 4px; font-size:15px; display:flex; align-items:center; gap:8px; }
+  .card h2 .k { color:var(--accent); }
+  .safe li { color:var(--muted); font-size:13px; margin:9px 0; list-style:none; padding-left:24px; position:relative; }
+  .safe li::before { content:"🛡️"; position:absolute; left:0; }
+  .safe ul { margin:10px 0 0; padding:0; }
+  ol.steps { margin:10px 0 0; padding-left:0; counter-reset:s; list-style:none; }
+  ol.steps li { position:relative; padding:0 0 14px 34px; color:var(--muted); font-size:13px; }
+  ol.steps li::before { counter-increment:s; content:counter(s); position:absolute; left:0; top:-1px; width:22px; height:22px; border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); font-weight:700; font-size:12px; display:grid; place-items:center; }
+  ol.steps b { color:var(--text); }
+  ol.steps code { background:var(--bg2); border:1px solid var(--border); padding:1px 6px; border-radius:5px; color:var(--text); }
+  .connect { max-width:880px; margin:18px auto 0; background:linear-gradient(180deg,var(--panel),var(--bg2)); border:1px solid var(--accent-line); border-radius:16px; padding:22px; }
+  .connect label { display:block; font-size:12px; color:var(--muted); margin:0 0 6px; font-weight:600; }
+  .connect .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .connect input { flex:1; min-width:240px; padding:11px 13px; border-radius:10px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:14px; }
+  .connect input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .connect .btn.primary { padding:11px 20px; font-size:14px; }
   .err { color:var(--fail); font-size:13px; margin-top:10px; min-height:18px; }
-  .hint { font-size:11.5px; color:var(--muted); margin-top:8px; }
-  .hint code { background:var(--bg2); border:1px solid var(--border); padding:1px 5px; border-radius:5px; }
+  .foot { max-width:880px; margin:22px auto 0; text-align:center; color:var(--muted); font-size:12px; }
   .spin { display:inline-block; animation:spin 1s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
+  .hide { display:none !important; }
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <img class="avatar" src="https://avatars.githubusercontent.com/u/54889469?v=4" alt="" />
+    <!-- pre-connect brand -->
+    <div class="logo" id="brandLogo">🔭</div>
+    <!-- post-connect avatar -->
+    <img class="avatar hide" id="brandAvatar" alt="" />
     <div class="who">
-      <span class="name"><b>alberthammerich</b> · PR Dashboard</span>
-      <span class="sub">open + closed &lt; <span id="hrslabel">48</span>h · <span id="age">—</span></span>
+      <span class="name" id="brandName">PR Dashboard</span>
+      <span class="sub" id="brandSub">open + recently-closed PRs · live CI</span>
     </div>
     <span class="grow"></span>
-    <div class="hbtns">
-      <button class="btn primary" id="refresh">🔄 Refresh</button>
-      <label class="toggle"><input type="checkbox" id="auto" /> auto 60s</label>
-      <button class="btn" id="settings" title="Token & settings">⚙︎</button>
+    <div class="hbtns" id="brandBtns">
+      <a class="btn" id="srcLink" href="#" target="_blank" rel="noopener">View source ↗</a>
+      <button class="btn primary hide" id="refresh">🔄 Refresh</button>
+      <label class="toggle hide" id="autoWrap"><input type="checkbox" id="auto" /> auto 60s</label>
+      <button class="btn hide" id="settings" title="Settings & sign out">⚙︎</button>
     </div>
   </div>
-  <div class="controls" id="controls" style="display:none">
+  <div class="controls hide" id="controls">
     <input id="q" type="search" placeholder="Search title, repo, branch, #number…   (press / to focus)" />
     <div class="chips" id="chips">
       <span class="chip active" data-f="all">All</span>
@@ -142,12 +163,12 @@
 <main id="main"></main>
 
 <script>
-const LS = { token:"prdash_token", author:"prdash_author", hours:"prdash_hours" };
-const AUTHOR_DEFAULT = "alberthammerich";
+const REPO_URL = "https://github.com/alberthammerich/pr-dashboard"; // open-source home
+const LS = { token:"prdash_token", author:"prdash_author", hours:"prdash_hours", me:"prdash_me" };
 const HOURS_DEFAULT = 48;
 
 const get = (k, d) => localStorage.getItem(k) ?? d;
-let DB = null, activeFilter = "all";
+let DB = null, ME = null, activeFilter = "all", autoTimer = null;
 
 const ICON = { pass:"✅", fail:"❌", running:"🟡", skip:"⚪", none:"·", other:"⚪" };
 const CIICON = { pass:"✅", fail:"❌", running:"🟡", none:"·" };
@@ -155,6 +176,7 @@ const CIICON = { pass:"✅", fail:"❌", running:"🟡", none:"·" };
 function rel(iso){ if(!iso) return ""; const d=(Date.now()-new Date(iso).getTime())/1000,m=60,h=3600,day=86400;
   if(d<0) return "just now"; if(d<m) return Math.floor(d)+"s ago"; if(d<h) return Math.floor(d/m)+"m ago"; if(d<day) return Math.floor(d/h)+"h ago"; return Math.floor(d/day)+"d ago"; }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function $(id){ return document.getElementById(id); }
 
 /* ---------- GitHub REST (client-side, with your token) ---------- */
 function api(path){
@@ -199,7 +221,6 @@ function rollup(checks){ if(!checks.length) return "none";
 
 async function enrich(item){
   const repo = item.repository_url.replace("https://api.github.com/repos/","");
-  const [owner, name] = repo.split("/");
   const merged = !!(item.pull_request && item.pull_request.merged_at);
   let state = item.state==="open" ? "OPEN" : (merged ? "MERGED" : "CLOSED");
   let branch="", sha="", additions=null, deletions=null, comments=null, draft=!!item.draft, review="";
@@ -223,7 +244,7 @@ async function enrich(item){
     ci:rollup(checks), checks };
 }
 async function collect(){
-  const author = get(LS.author, AUTHOR_DEFAULT);
+  const author = get(LS.author, "") || (ME && ME.login);
   const hours = Number(get(LS.hours, HOURS_DEFAULT));
   const cutoff = Date.now() - hours*3600*1000;
   const sinceDay = new Date(cutoff).toISOString().slice(0,10);
@@ -237,7 +258,7 @@ async function collect(){
   return { prs, generatedAt:new Date().toISOString(), author, hours };
 }
 
-/* ---------- render ---------- */
+/* ---------- render dashboard ---------- */
 function stateBadge(pr){ if(pr.state==="MERGED")return '<span class="badge b-merged">merged</span>';
   if(pr.state==="CLOSED")return '<span class="badge b-closed">closed</span>';
   if(pr.isDraft)return '<span class="badge b-draft">draft</span>'; return '<span class="badge b-open">open</span>'; }
@@ -253,8 +274,8 @@ function matches(pr, term){
 }
 function render(){
   if(!DB) return;
-  const term=document.getElementById("q").value.trim().toLowerCase();
-  const main=document.getElementById("main"); const byRepo={}; let shown=0;
+  const term=$("q").value.trim().toLowerCase();
+  const main=$("main"); const byRepo={}; let shown=0;
   for(const pr of DB.prs){ if(!matches(pr,term)) continue; (byRepo[pr.repo]||=[]).push(pr); shown++; }
   const repos=Object.keys(byRepo).sort(); main.innerHTML="";
   if(!repos.length){ main.innerHTML='<div class="empty">No PRs match.</div>'; updateCounts(0); return; }
@@ -288,63 +309,125 @@ function render(){
   updateCounts(shown);
 }
 function updateCounts(shown){
-  if(!DB){ document.getElementById("counts").textContent=""; return; }
+  if(!DB){ $("counts").textContent=""; return; }
   const t=DB.prs.length, fail=DB.prs.filter(p=>p.ci==="fail").length, run=DB.prs.filter(p=>p.ci==="running").length;
-  document.getElementById("counts").innerHTML="<b>"+shown+"</b> / "+t+" PRs"+(fail?" · <b>"+fail+"</b> failing":"")+(run?" · <b>"+run+"</b> running":"");
-  document.getElementById("age").textContent="updated "+rel(DB.generatedAt);
-  document.getElementById("hrslabel").textContent=DB.hours;
+  $("counts").innerHTML="<b>"+shown+"</b> / "+t+" PRs"+(fail?" · <b>"+fail+"</b> failing":"")+(run?" · <b>"+run+"</b> running":"");
+  $("brandSub").textContent="open + closed < "+DB.hours+"h · updated "+rel(DB.generatedAt);
 }
 
-/* ---------- settings / token gate ---------- */
-function showSettings(force){
-  const author=get(LS.author,AUTHOR_DEFAULT), hours=get(LS.hours,HOURS_DEFAULT), hasTok=!!get(LS.token,"");
-  document.getElementById("main").innerHTML =
-    '<div class="card"><h2>'+(hasTok&&!force?"Settings":"Connect your GitHub")+'</h2>'
-    +'<p>This page runs entirely in your browser and stores your token only in <code>localStorage</code> on this device. Nothing is sent anywhere except GitHub.</p>'
-    +'<label>GitHub token (classic, <code>repo</code> scope)</label>'
-    +'<input id="tok" type="password" placeholder="ghp_…" value="'+esc(get(LS.token,""))+'" />'
-    +'<div class="row2"><div><label>Author</label><input id="auth" value="'+esc(author)+'" /></div>'
-    +'<div><label>Closed window (hours)</label><input id="hrs" type="number" value="'+esc(String(hours))+'" /></div></div>'
-    +'<div class="actions"><button class="btn primary" id="save">Save & load</button>'
-    +(hasTok?'<button class="btn" id="clear">Clear token</button>':"")+'<span class="err" id="serr"></span></div>'
-    +'<div class="hint">Create one: <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">github.com/settings/tokens/new</a> → tick <b>repo</b> → Generate. '
-    +'For your Teton-ai org PRs, click <b>Configure SSO</b> on the token and authorize it. The token is read-only used here.</div></div>';
-  document.getElementById("save").onclick=()=>{
-    const tv=document.getElementById("tok").value.trim();
-    if(!tv){ document.getElementById("serr").textContent="Enter a token."; return; }
-    localStorage.setItem(LS.token,tv);
-    localStorage.setItem(LS.author,document.getElementById("auth").value.trim()||AUTHOR_DEFAULT);
-    localStorage.setItem(LS.hours,String(Number(document.getElementById("hrs").value)||HOURS_DEFAULT));
-    document.getElementById("controls").style.display="";
-    load();
+/* ---------- landing (no token) ---------- */
+function showLanding(errMsg){
+  // header → brand mode
+  $("brandLogo").classList.remove("hide"); $("brandAvatar").classList.add("hide");
+  $("brandName").innerHTML="PR Dashboard"; $("brandSub").textContent="open + recently-closed PRs · live CI";
+  $("refresh").classList.add("hide"); $("autoWrap").classList.add("hide"); $("settings").classList.add("hide");
+  $("controls").classList.add("hide"); $("srcLink").classList.remove("hide");
+  $("main").innerHTML =
+    '<div class="hero"><div class="logo">🔭</div>'
+    +'<h1>Your <b>PR</b> cockpit</h1>'
+    +'<p class="tag">Every open pull request you’ve authored — plus everything you closed in the last couple of days — grouped by repo, with live CI status you can expand. Private to you, runs entirely in your browser.</p></div>'
+    +'<div class="grid">'
+      +'<div class="card safe"><h2><span class="k">🛡️</span> Why this is safe</h2><ul>'
+        +'<li>This is a <b>static page</b> — there is no backend server. Nothing you enter is sent anywhere except directly to <code>api.github.com</code> over HTTPS.</li>'
+        +'<li>Your token is stored <b>only in this browser’s</b> <code>localStorage</code>, on this device. It never touches a third party.</li>'
+        +'<li>It’s <b>100% open source</b> — <a id="srcLink2" href="#" target="_blank" rel="noopener">read every line</a>. No hidden network calls, no analytics.</li>'
+        +'<li>The token is used <b>read-only</b>; the dashboard never writes to your repos.</li>'
+        +'<li><b>Revoke anytime</b> at github.com/settings/tokens, or hit <b>Sign out</b> to wipe it from this browser.</li>'
+      +'</ul></div>'
+      +'<div class="card"><h2><span class="k">⚙︎</span> Set it up (about a minute)</h2><ol class="steps">'
+        +'<li><b>Create a token:</b> open <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">github.com/settings/tokens/new</a>, tick <code>repo</code>, set <b>Expiration: No expiration</b>, Generate. <span style="opacity:.8">(Public repos only? a no-scope token works too.)</span></li>'
+        +'<li><b>Org repos (SSO):</b> if your PRs are in an org like a company, click <b>Configure SSO</b> on the token and authorize it.</li>'
+        +'<li><b>Paste it below</b> and hit Connect. That’s it — you’ll never paste it again on this browser.</li>'
+      +'</ol></div>'
+    +'</div>'
+    +'<div class="connect"><label>Your GitHub token</label><div class="row">'
+      +'<input id="tok" type="password" placeholder="ghp_…" autocomplete="off" />'
+      +'<button class="btn primary" id="connect">Connect GitHub →</button>'
+    +'</div><div class="err" id="lerr">'+(errMsg?esc(errMsg):"")+'</div></div>'
+    +'<div class="foot">No accounts. No tracking. Open source. · <a id="srcLink3" href="#" target="_blank" rel="noopener">View the code</a></div>';
+  [ "srcLink","srcLink2","srcLink3" ].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
+  const go=()=>{
+    const tv=$("tok").value.trim();
+    if(!tv){ $("lerr").textContent="Paste a token first."; return; }
+    localStorage.setItem(LS.token, tv);
+    connectAndLoad();
   };
-  const clr=document.getElementById("clear"); if(clr) clr.onclick=()=>{ localStorage.removeItem(LS.token); DB=null; showSettings(true); document.getElementById("controls").style.display="none"; };
+  $("connect").onclick=go;
+  $("tok").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
+  $("tok").focus();
 }
 
-/* ---------- load ---------- */
+/* ---------- settings (signed in) ---------- */
+function showSettings(){
+  const author=get(LS.author,"")||(ME&&ME.login)||"", hours=get(LS.hours,HOURS_DEFAULT);
+  $("main").innerHTML =
+    '<div class="connect" style="max-width:560px"><h2 style="margin:0 0 12px;font-size:16px">Settings</h2>'
+    +'<label>Author to track (defaults to you)</label><input id="sAuth" value="'+esc(author)+'" />'
+    +'<label style="margin-top:12px">Closed window (hours)</label><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
+    +'<div class="row" style="margin-top:16px"><button class="btn primary" id="sSave">Save & reload</button>'
+    +'<button class="btn" id="sOut">Sign out</button></div>'
+    +'<div class="err" id="serr"></div></div>';
+  $("sSave").onclick=()=>{
+    localStorage.setItem(LS.author, $("sAuth").value.trim());
+    localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT));
+    DB=null; load();
+  };
+  $("sOut").onclick=signOut;
+}
+function signOut(){
+  localStorage.removeItem(LS.token); localStorage.removeItem(LS.author);
+  localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me);
+  DB=null; ME=null; if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } $("auto").checked=false;
+  showLanding();
+}
+
+/* ---------- identity + load ---------- */
+function applyIdentity(me){
+  ME=me;
+  $("brandLogo").classList.add("hide");
+  const av=$("brandAvatar"); av.src=me.avatar_url; av.classList.remove("hide");
+  $("brandName").innerHTML="<b>"+esc(me.login)+"</b> · PR Dashboard";
+  $("favicon").href=me.avatar_url;
+  $("refresh").classList.remove("hide"); $("autoWrap").classList.remove("hide"); $("settings").classList.remove("hide");
+  $("srcLink").classList.add("hide"); $("controls").classList.remove("hide");
+}
+async function connectAndLoad(){
+  $("main").innerHTML='<div class="empty"><span class="spin">⟳</span> Connecting…</div>';
+  try{
+    const me=await api("/user");
+    localStorage.setItem(LS.me, JSON.stringify({login:me.login, avatar_url:me.avatar_url, name:me.name}));
+    applyIdentity(me);
+    await load();
+  }catch(e){
+    localStorage.removeItem(LS.token);
+    showLanding(String(e.message||e));
+  }
+}
 async function load(){
-  if(!get(LS.token,"")){ showSettings(true); return; }
-  const btn=document.getElementById("refresh"); const age=document.getElementById("age");
+  if(!get(LS.token,"")){ showLanding(); return; }
+  if(!ME){ const cached=get(LS.me,""); if(cached){ try{ applyIdentity(JSON.parse(cached)); }catch(e){} } }
+  const btn=$("refresh");
   btn.disabled=true; btn.innerHTML='<span class="spin">⟳</span> Refreshing…';
-  if(!DB){ document.getElementById("main").innerHTML='<div class="empty"><span class="spin">⟳</span> Loading your PRs…</div>'; }
-  document.getElementById("controls").style.display="";
+  if(!DB){ $("main").innerHTML='<div class="empty"><span class="spin">⟳</span> Loading your PRs…</div>'; }
   try{ DB=await collect(); render(); }
   catch(e){
-    document.getElementById("main").innerHTML='<div class="card"><h2>Couldn’t load</h2><p class="err">'+esc(String(e.message||e))+'</p><div class="actions"><button class="btn primary" onclick="showSettings(true)">Open settings</button></div></div>';
+    $("main").innerHTML='<div class="connect" style="max-width:560px"><h2 style="margin:0 0 8px;font-size:16px">Couldn’t load</h2><p class="err">'+esc(String(e.message||e))+'</p><div class="row"><button class="btn primary" id="retry">Retry</button><button class="btn" id="fix">Settings</button></div></div>';
+    const r=$("retry"), f=$("fix"); if(r) r.onclick=load; if(f) f.onclick=showSettings;
   }
   finally{ btn.disabled=false; btn.innerHTML="🔄 Refresh"; }
 }
 
+/* ---------- wiring ---------- */
+$("srcLink").href=REPO_URL;
 document.addEventListener("input", e=>{ if(e.target.id==="q") render(); });
-document.getElementById("chips").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(!c)return;
+$("chips").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(!c)return;
   activeFilter=c.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===c)); render(); });
-document.getElementById("refresh").addEventListener("click", load);
-document.getElementById("settings").addEventListener("click", ()=>showSettings(true));
-let timer=null;
-document.getElementById("auto").addEventListener("change", e=>{ if(e.target.checked){ timer=setInterval(load,60000); } else clearInterval(timer); });
-document.addEventListener("keydown", e=>{ const q=document.getElementById("q"); if(e.key==="/"&&document.activeElement!==q&&q.offsetParent){ e.preventDefault(); q.focus(); } });
+$("refresh").addEventListener("click", load);
+$("settings").addEventListener("click", showSettings);
+$("auto").addEventListener("change", e=>{ if(e.target.checked){ autoTimer=setInterval(load,60000); } else clearInterval(autoTimer); });
+document.addEventListener("keydown", e=>{ const q=$("q"); if(e.key==="/"&&document.activeElement!==q&&q&&q.offsetParent){ e.preventDefault(); q.focus(); } });
 
-if(get(LS.token,"")) load(); else showSettings(true);
+if(get(LS.token,"")) connectAndLoad(); else showLanding();
 </script>
 </body>
 </html>
