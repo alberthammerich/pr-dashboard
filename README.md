@@ -1,4 +1,4 @@
-# 🔭 PR Dashboard
+#  🪶𓂃PR Dashboard𓂃🪶
 
 A private, open-source dashboard for the GitHub pull requests **you're working on** — every PR
 you've authored that's still **open**, plus everything you **closed/merged in the last 48 hours** —
