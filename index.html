@@ -342,8 +342,12 @@ function showLanding(errMsg){
     +'</div>'
     +'<div class="connect"><label>Your GitHub token</label><div class="row">'
       +'<input id="tok" type="password" placeholder="ghp_…" autocomplete="off" />'
-      +'<button class="btn primary" id="connect">Connect GitHub →</button>'
-    +'</div><div class="err" id="lerr">'+(errMsg?esc(errMsg):"")+'</div></div>'
+      +'<button class="btn primary" id="connect">Connect here →</button>'
+      +'<button class="btn" id="deploy">🚀 Deploy to my GitHub</button>'
+    +'</div>'
+    +'<div style="margin-top:10px;color:var(--muted);font-size:12px"><b style="color:var(--text)">Connect here</b> = use it on this page right now. &nbsp;<b style="color:var(--text)">Deploy</b> = create your own copy at <code style="background:var(--bg2);border:1px solid var(--border);padding:1px 5px;border-radius:5px">your-name.github.io/pr-dashboard/</code> (needs the <code style="background:var(--bg2);border:1px solid var(--border);padding:1px 5px;border-radius:5px">repo</code> scope).</div>'
+    +'<div class="err" id="lerr">'+(errMsg?esc(errMsg):"")+'</div>'
+    +'<div id="dstatus" style="margin-top:6px;font-size:13px"></div></div>'
     +'<div class="foot">No accounts. No tracking. Open source. · <a id="srcLink3" href="#" target="_blank" rel="noopener">View the code</a></div>';
   [ "srcLink","srcLink2","srcLink3" ].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
   const go=()=>{
@@ -353,6 +357,7 @@ function showLanding(errMsg){
     connectAndLoad();
   };
   $("connect").onclick=go;
+  $("deploy").onclick=deployFlow;
   $("tok").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
   $("tok").focus();
 }
@@ -415,6 +420,61 @@ async function load(){
     const r=$("retry"), f=$("fix"); if(r) r.onclick=load; if(f) f.onclick=showSettings;
   }
   finally{ btn.disabled=false; btn.innerHTML="🔄 Refresh"; }
+}
+
+/* ---------- deploy a copy to the user's own GitHub ---------- */
+const SRC = REPO_URL.replace("https://github.com/",""); // canonical source repo "owner/name"
+function b64utf8(s){ return btoa(unescape(encodeURIComponent(s))); }
+function debase64(s){ return decodeURIComponent(escape(atob((s||"").replace(/\s/g,"")))); }
+async function fetchSource(path){ const r=await api("/repos/"+SRC+"/contents/"+path); return debase64(r.content); }
+function ghRaw(path, opts){
+  opts=opts||{}; const token=get(LS.token,"");
+  return fetch("https://api.github.com"+path, {
+    method:opts.method||"GET",
+    headers:Object.assign({ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, opts.body?{"Content-Type":"application/json"}:{}),
+    body:opts.body?JSON.stringify(opts.body):undefined, cache:"no-store",
+  }).then(async r=>{ let j=null; try{ j=await r.json(); }catch(e){} return {status:r.status, json:j}; });
+}
+async function putFile(owner,repo,path,content,branch){
+  const g=await ghRaw("/repos/"+owner+"/"+repo+"/contents/"+path+"?ref="+branch);
+  const body={ message:"Add "+path, content:b64utf8(content), branch };
+  if(g.status===200 && g.json && g.json.sha) body.sha=g.json.sha;
+  const r=await ghRaw("/repos/"+owner+"/"+repo+"/contents/"+path, {method:"PUT", body});
+  if(r.status>=400) throw new Error("Upload of "+path+" failed ("+r.status+").");
+}
+async function waitBuild(owner,repo){
+  for(let i=0;i<24;i++){ const b=await ghRaw("/repos/"+owner+"/"+repo+"/pages/builds/latest");
+    if(b.json && b.json.status==="built") return true; await new Promise(r=>setTimeout(r,5000)); }
+  return false;
+}
+async function deployFlow(){
+  const tv=$("tok").value.trim();
+  if(!tv){ $("lerr").textContent="Paste a token first — deploying needs the 'repo' scope."; return; }
+  localStorage.setItem(LS.token, tv);
+  const dbtn=$("deploy"), cbtn=$("connect"); dbtn.disabled=true; cbtn.disabled=true; $("lerr").textContent="";
+  const set=m=>{ $("dstatus").innerHTML='<span class="spin">⟳</span> '+esc(m); };
+  try{
+    set("Reading your account…");
+    const me=await api("/user"); const owner=me.login, repo="pr-dashboard";
+    set("Fetching the latest source…");
+    const [idx,rd,lic]=await Promise.all([ fetchSource("index.html"), fetchSource("README.md").catch(()=>""), fetchSource("LICENSE").catch(()=>"") ]);
+    set("Creating "+owner+"/"+repo+" on your account…");
+    const cr=await ghRaw("/user/repos", {method:"POST", body:{ name:repo, description:"My PR dashboard — open + recently-closed PRs with live CI", homepage:"https://"+owner+".github.io/"+repo+"/", auto_init:true, has_issues:false, has_wiki:false, has_projects:false }});
+    if(cr.status>=400 && cr.status!==422) throw new Error("Couldn’t create the repo ("+cr.status+"). Make sure your token has the 'repo' scope ticked.");
+    if(cr.status===422) set("You already have that repo — updating it…");
+    const info=await api("/repos/"+owner+"/"+repo); const branch=info.default_branch||"main";
+    set("Uploading the dashboard…");
+    await putFile(owner,repo,"index.html",idx,branch);
+    if(rd) await putFile(owner,repo,"README.md",rd,branch);
+    if(lic) await putFile(owner,repo,"LICENSE",lic,branch);
+    set("Enabling GitHub Pages…");
+    await ghRaw("/repos/"+owner+"/"+repo+"/pages", {method:"POST", body:{ source:{ branch, path:"/" } }});
+    const url="https://"+owner+".github.io/"+repo+"/";
+    set("Waiting for the first Pages build (~1 min)…");
+    await waitBuild(owner,repo);
+    $("dstatus").innerHTML='✅ <b>Deployed!</b> Your own dashboard lives at <a href="'+url+'" target="_blank" rel="noopener"><b>'+esc(owner)+'.github.io/pr-dashboard/</b></a>. Open it and paste your token once there (new domain) — then it’s all yours.';
+  }catch(e){ $("dstatus").textContent=""; $("lerr").textContent=String(e.message||e); }
+  finally{ dbtn.disabled=false; cbtn.disabled=false; }
 }
 
 /* ---------- wiring ---------- */
