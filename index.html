@@ -28,21 +28,30 @@
     --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   }
   * { box-sizing:border-box; }
-  html,body { background:var(--bg); }
+  html { background:var(--bg); } /* white base = graceful fallback if video absent (e.g. gist) */
+  body { background:transparent; }
+  #bgvid { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
+  #bgscrim { position:fixed; inset:0; z-index:-1; background:rgba(255,255,255,.10); }
+  body.app #bgvid, body.app #bgscrim { display:none; }
+  @media (prefers-reduced-motion: reduce){ #bgvid, #bgscrim { display:none; } }
   body {
     margin:0; color:var(--text); font:14.5px/1.55 var(--sans);
+    background:transparent; /* landing: let the video show through (white base is on <html>) */
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  /* signed in: video hidden, restore the white canvas + accent-glow */
+  body.app {
     background:
       radial-gradient(820px 360px at 8% -10%, var(--accent-soft), transparent 60%),
       radial-gradient(680px 320px at 102% -6%, var(--accent-soft), transparent 55%),
       var(--bg);
-    min-height:100vh; -webkit-font-smoothing:antialiased;
   }
   a { color:var(--accent-ink); }
   .mono { font-family:var(--mono); }
   .kicker { font-family:var(--mono); font-size:12.5px; color:var(--accent-ink); letter-spacing:.01em; }
   .swatch,.btn,.chip,.brand-box,.badge,details.repo,.connect,.statcard { transition:background-color .25s, border-color .25s, color .25s, box-shadow .25s; }
 
-  header { position:sticky; top:0; z-index:20; background:rgba(255,255,255,.82); backdrop-filter:saturate(1.4) blur(12px); border-bottom:1px solid var(--line); padding:13px 22px; }
+  header { position:sticky; top:0; z-index:20; background:var(--surface); border-bottom:1px solid var(--line); padding:13px 22px; }
   .brand { display:flex; align-items:center; gap:12px; }
   .brand-box { width:38px; height:38px; border-radius:11px; background:var(--accent); box-shadow:inset 0 1px 0 rgba(255,255,255,.45), var(--shadow-sm); flex:0 0 auto; }
   .avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); background:var(--inset); flex:0 0 auto; }
@@ -179,6 +188,8 @@
 </style>
 </head>
 <body>
+<video id="bgvid" autoplay loop muted playsinline preload="auto" aria-hidden="true"><source src="bg.mp4" type="video/mp4"></video><div id="bgscrim"></div>
+<script>(function(){var v=document.getElementById("bgvid");function go(){var p=v&&v.play&&v.play();if(p&&p.catch)p.catch(function(){});}if(v){v.addEventListener("canplay",go);go();document.addEventListener("visibilitychange",function(){if(!document.hidden)go();});}})();</script>
 <header>
   <div class="brand">
     <div class="brand-box" id="brandBox"></div>
@@ -388,6 +399,7 @@ function updateCounts(shown){
 
 /* ---------- landing ---------- */
 function showLanding(errMsg){
+  document.body.classList.remove("app");
   $("brandBox").classList.remove("hide"); $("brandAvatar").classList.add("hide");
   $("brandName").innerHTML="pr&middot;dashboard"; $("brandSub").textContent="the PRs you're working on, with their CI";
   $("refresh").classList.add("hide"); $("autoWrap").classList.add("hide"); $("settings").classList.add("hide");
@@ -447,7 +459,8 @@ function signOut(){
 
 /* ---------- identity + load ---------- */
 function applyIdentity(me){
-  ME=me; $("brandBox").classList.add("hide");
+  ME=me; document.body.classList.add("app");
+  $("brandBox").classList.add("hide");
   const av=$("brandAvatar"); av.src=me.avatar_url; av.classList.remove("hide");
   $("brandName").innerHTML="<b>"+esc(me.login)+"</b>"; $("favicon").href=me.avatar_url;
   $("refresh").classList.remove("hide"); $("autoWrap").classList.remove("hide"); $("settings").classList.remove("hide");
