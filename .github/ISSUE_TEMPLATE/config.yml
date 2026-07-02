@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Try the live dashboard
+    url: https://alberthammerich.github.io/pr-dashboard/
+    about: See the current behavior before filing — your token stays in your browser.
+  - name: How to contribute
+    url: https://github.com/alberthammerich/pr-dashboard/blob/master/CONTRIBUTING.md
+    about: Fork, tweak the single index.html, and open a PR.

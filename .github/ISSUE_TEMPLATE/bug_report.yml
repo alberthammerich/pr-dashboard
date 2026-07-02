@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in the dashboard is broken or wrong
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. ⚠️ **Never paste your GitHub token** — redact it from any screenshots or logs.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+      placeholder: When I switch to the Gold theme, the Connect button text disappears…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the live site
+        2. Paste a token and Connect
+        3. Click …
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & OS
+      placeholder: Chrome 126 on macOS 14
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where are you running it?
+      description: The live site, the gist mirror, your own deployed copy, or locally?
+      placeholder: alberthammerich.github.io/pr-dashboard
+    validations:
+      required: false
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag an image in if it helps. Remember to crop out any token.
+    validations:
+      required: false
