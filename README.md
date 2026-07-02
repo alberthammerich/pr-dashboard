@@ -74,6 +74,12 @@ On connect, the page calls `GET /user` to learn who you are, then uses the GitHu
 The GitHub **GraphQL** API isn't usable here because it doesn't send CORS headers to browsers, so
 this uses the REST API throughout.
 
+## Contributing
+
+Issues and pull requests are welcome. Found a bug or have an idea? [Open an issue](https://github.com/alberthammerich/pr-dashboard/issues/new/choose). Want to change something? Fork the repo, edit the single `index.html`, and open a PR.
+
+Everything lands through pull requests — outside contributors work from a fork, and a maintainer reviews and merges. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the (short) details and [the code of conduct](./CODE_OF_CONDUCT.md).
+
 ## Credits
 
 Display type is [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif) by Rodrigo
