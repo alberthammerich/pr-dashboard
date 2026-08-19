@@ -1,5 +1,3 @@
-![PR Dashboard — see every PR you’re shipping, and whether it’s green](./banner.jpg)
-
 # PR Dashboard
 
 A private, open-source dashboard for the GitHub pull requests **you're working on** — every PR
@@ -23,9 +21,8 @@ open and just-closed PRs with their CI status. So I made it.
 - **Self-personalizing** — paste your token and it picks up *your* username, avatar, and PRs.
 - **At-a-glance summary** — big-number cards for open, closed-in-48h, CI failing, and running.
 - **Per-repo grouping** with failing/running badges on each repo.
-- **Live CI** per PR (✅ pass · ❌ fail · 🟡 running) — expand any PR to see every check, linked to its run.
+- **Live CI** per PR (✓ pass · × fail · ◌ running) — expand any PR to see every check, linked to its run.
 - **Instant search** across title / repo / branch / `#number`, plus filter chips (open · closed · failing · running).
-- **Six color themes** — orange, blue, green, gold, lavender, coral — switch live on the page or in ⚙︎ Settings.
 - **One-click deploy** to your own GitHub (see below), plus **Refresh** and optional **auto-refresh** every 60s.
 - Closed-PR window configurable in ⚙︎ Settings (default 48h).
 
@@ -36,7 +33,7 @@ open and just-closed PRs with their CI status. So I made it.
    → tick **`repo`** → set **Expiration: No expiration** → **Generate**.
    *(Tracking only public repos? A no-scope token works too.)*
 3. If your PRs live in an org with SSO, click **Configure SSO** on the token and authorize it.
-4. Paste the token and hit **Connect**. You won't paste it again on this browser.
+4. Paste the token and hit **Open dashboard**. You won't paste it again on this browser.
 
 ## Is it safe? (yes — here's why)
 
@@ -55,7 +52,7 @@ open and just-closed PRs with their CI status. So I made it.
 Three ways, easiest first:
 
 - **One-click "Deploy to my GitHub"** *(recommended)* — on the live page, paste your token and hit
-  **🚀 Deploy to my GitHub**. It uses your token to create a `pr-dashboard` repo on **your** account,
+  **Deploy your own copy**. It uses your token to create a `pr-dashboard` repo on **your** account,
   upload the page, and turn on GitHub Pages — then hands you your own URL at
   `https://<you>.github.io/pr-dashboard/`. (Needs the `repo` scope.)
 - **Fork & host manually:** fork this repo, enable **GitHub Pages** (Settings → Pages → branch root),

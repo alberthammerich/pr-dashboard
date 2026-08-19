@@ -49,7 +49,7 @@
   a { color:var(--accent-ink); }
   .mono { font-family:var(--mono); }
   .kicker { font-family:var(--mono); font-size:12.5px; color:var(--accent-ink); letter-spacing:.01em; }
-  .swatch,.btn,.chip,.brand-box,.badge,details.repo,.connect,.statcard { transition:background-color .25s, border-color .25s, color .25s, box-shadow .25s; }
+  .btn,.chip,.brand-box,.badge,details.repo,.connect,.statcard { transition:background-color .25s, border-color .25s, color .25s, box-shadow .25s; }
 
   header { position:sticky; top:0; z-index:20; background:var(--surface); border-bottom:1px solid var(--line); padding:13px 22px; }
   .brand { display:flex; align-items:center; gap:12px; }
@@ -91,13 +91,6 @@
   .statcard { border:1px solid var(--line); border-radius:18px; padding:16px 18px 15px; background:var(--surface); box-shadow:var(--shadow-sm); }
   .statcard .n { font:400 42px/0.95 var(--serif); letter-spacing:0; font-feature-settings:"tnum"; }
   .statcard .l { font:600 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:7px; }
-
-  /* swatches */
-  .swatches { display:flex; gap:11px; align-items:center; flex-wrap:wrap; }
-  .swatch { width:30px; height:30px; border-radius:50%; background:var(--sw); border:none; cursor:pointer; position:relative; padding:0; box-shadow:var(--shadow-sm); }
-  .swatch:hover { transform:translateY(-2px); }
-  .swatch.on { box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--sw); }
-  .swatch.on::after { content:"✓"; position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-size:14px; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.3); }
 
   /* dashboard list */
   details.repo { margin-bottom:13px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow-sm); }
@@ -219,10 +212,431 @@
   .hide { display:none !important; }
   @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
 </style>
+<style id="editorial-redesign">
+  :root {
+    --accent:#171713; --accent-ink:#171713; --on-accent:#f7f6f1;
+    --accent-soft:#e8e6de; --accent-line:#aaa79d; --accent-hover:#32322d;
+    --bg:#f2f1ec; --surface:#f8f7f2; --surface2:#eeece5; --inset:#e7e5dd;
+    --line:#c9c6bc; --line2:#dedbd2;
+    --text:#171713; --muted:#626159; --faint:#858278;
+    --open:#237451; --merged:#6251a3; --closed:#8a6350; --review:#9a6a12;
+    --pass:#237451; --fail:#b33d32; --run:#9a6a12;
+    --shadow:none; --shadow-sm:none;
+  }
+
+  html { background:var(--bg); }
+  body,
+  body.app {
+    background:var(--bg);
+    color:var(--text);
+    font:14px/1.5 var(--sans);
+  }
+  #bgvid,
+  #bgscrim { display:none !important; }
+  a { color:inherit; text-underline-offset:3px; }
+  .kicker { color:var(--muted); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+
+  header {
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:14px max(20px, calc((100vw - 1400px)/2));
+    background:color-mix(in srgb,var(--surface) 94%,transparent);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(14px);
+  }
+  .brand { min-height:38px; gap:11px; }
+  .brand-box {
+    width:36px;
+    height:36px;
+    border-radius:2px;
+    background:var(--text);
+    box-shadow:none;
+    display:grid;
+    place-items:center;
+  }
+  .brand-box::before {
+    content:"PR";
+    color:var(--surface);
+    font:700 10px var(--mono);
+    letter-spacing:.04em;
+  }
+  .avatar {
+    width:36px;
+    height:36px;
+    border-radius:2px;
+    border:1px solid var(--line);
+    box-shadow:none;
+  }
+  .who .name { font-size:13px; letter-spacing:.01em; }
+  .who .name b { color:var(--text); }
+  .who .sub { color:var(--faint); font-size:11px; }
+  .hbtns { gap:7px; }
+  .btn {
+    min-height:34px;
+    padding:8px 12px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:transparent;
+    box-shadow:none;
+    color:var(--text);
+    font:600 12px var(--sans);
+  }
+  .btn:hover { border-color:var(--text); background:var(--surface2); }
+  .btn.primary { background:var(--text); border-color:var(--text); color:var(--surface); }
+  .btn.primary:hover { background:#32322d; border-color:#32322d; }
+  .btn.ghost { color:var(--muted); }
+  .toggle { color:var(--faint); font-size:10px; letter-spacing:.04em; }
+  .toggle input { accent-color:var(--text); }
+  :focus-visible { outline:1px solid var(--text); outline-offset:3px; border-radius:2px; }
+
+  .controls {
+    gap:8px;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line2);
+  }
+  #q {
+    min-width:280px;
+    padding:9px 0;
+    border:0;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    font:13px var(--mono);
+  }
+  #q:focus { border-color:var(--text); box-shadow:none; }
+  .chips { gap:0; }
+  .chip {
+    padding:7px 11px;
+    border:0;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    background:transparent;
+    color:var(--faint);
+    font:500 10px var(--mono);
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  .chip:hover { color:var(--text); background:transparent; }
+  .chip.active { color:var(--text); border-color:var(--text); background:transparent; }
+  .counts { color:var(--faint); font-size:10px; letter-spacing:.03em; }
+
+  main { max-width:1400px; padding:38px 20px 80px; }
+  body.app main { padding-top:28px; }
+  .empty { color:var(--muted); padding:72px 20px; font-family:var(--mono); font-size:12px; }
+
+  .stats {
+    gap:0;
+    margin:0 0 42px;
+    border:1px solid var(--line);
+    background:var(--surface);
+  }
+  .statcard {
+    min-height:112px;
+    padding:18px 20px;
+    border:0;
+    border-right:1px solid var(--line);
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  .statcard:last-child { border-right:0; }
+  .statcard .n { color:var(--text) !important; font-size:48px; line-height:.9; }
+  .statcard .l { margin-top:13px; color:var(--faint); font-size:9px; letter-spacing:.13em; }
+
+  details.repo {
+    margin:0 0 34px;
+    border:0;
+    border-top:1px solid var(--text);
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    overflow:visible;
+  }
+  details.repo > summary {
+    min-height:48px;
+    padding:12px 2px;
+    gap:10px;
+    font-weight:600;
+  }
+  details.repo > summary::before { content:"+"; width:16px; color:var(--faint); font:400 14px var(--mono); }
+  details.repo[open] > summary::before { content:"−"; transform:none; }
+  details.repo > summary .rname { font-size:12px; letter-spacing:.01em; }
+  .repo-count { font-size:10px; }
+  .repo-badges { gap:10px; }
+  .repo-alert { font:500 9px var(--mono); letter-spacing:.06em; text-transform:uppercase; }
+  .repo-alert.fail { color:var(--fail); }
+  .repo-alert.run { color:var(--run); }
+
+  .pr { border-top:1px solid var(--line2); }
+  details.pr > summary {
+    min-height:50px;
+    padding:10px 2px;
+    gap:11px;
+  }
+  details.pr[open] > summary { background:transparent; }
+  details.pr > summary:hover { background:color-mix(in srgb,var(--surface2) 70%,transparent); }
+  .ci-dot { width:16px; height:16px; display:grid; place-items:center; font:600 13px/1 var(--mono); }
+  .ci-pass { color:var(--pass); }
+  .ci-fail { color:var(--fail); }
+  .ci-running { color:var(--run); }
+  .ci-none { color:var(--faint); }
+  .pr-title { min-width:220px; color:var(--text); font-size:13px; font-weight:600; }
+  .pr-title:hover { color:var(--text); text-decoration:underline; }
+  .pr-num { max-width:300px; overflow:hidden; text-overflow:ellipsis; color:var(--faint); font-size:10px; white-space:nowrap; }
+  .badge {
+    padding:2px 6px;
+    border-radius:2px;
+    background:transparent !important;
+    font:500 9px var(--mono);
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+  .when,
+  .stat { color:var(--faint); font-size:10px; }
+  .checks { padding:3px 12px 14px 29px; background:transparent; }
+  .check { gap:9px; padding:4px 0; color:var(--muted); font-size:11px; }
+  .check-mark { width:12px; display:inline-block; text-align:center; font-weight:700; }
+  .check-mark.pass { color:var(--pass); }
+  .check-mark.fail { color:var(--fail); }
+  .check-mark.running { color:var(--run); }
+  .check a { color:var(--text); }
+  .check .wf { color:var(--faint); }
+
+  .landing {
+    min-height:0;
+    display:block;
+    padding:0 0 12px;
+  }
+  .landing-stage {
+    position:relative;
+    min-height:calc(100svh - 105px);
+    border-top:1px solid var(--text);
+  }
+  .landing-meta {
+    position:absolute;
+    top:18px;
+    right:0;
+    display:flex;
+    align-items:center;
+    gap:22px;
+    color:var(--faint);
+    font:500 9px var(--mono);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .landing-meta .pass { color:var(--pass); }
+  .landing-meta .fail { color:var(--fail); }
+  .landing-meta .run { color:var(--run); }
+  .ascii-field {
+    position:absolute;
+    inset:50px 0 230px;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    background:var(--bg);
+  }
+  .ascii-art {
+    margin:0;
+    display:block;
+    width:clamp(360px,33vw,470px);
+    height:auto;
+    filter:invert(1);
+    mix-blend-mode:multiply;
+    user-select:none;
+    transform:translateX(-8px);
+    animation:ascii-reveal 1s steps(14,end) .08s both;
+  }
+  @keyframes ascii-reveal {
+    from { opacity:.15; clip-path:inset(0 100% 0 0); }
+    to { opacity:1; clip-path:inset(0); }
+  }
+  .landing-bottom {
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:24px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(360px,430px);
+    gap:64px;
+    align-items:end;
+  }
+  .landing-copy { max-width:430px; }
+  .landing-copy .kicker { display:block; margin-bottom:20px; }
+  .landing-copy h1 {
+    margin:0;
+    font:400 clamp(28px,2.8vw,44px)/.98 var(--serif);
+    letter-spacing:-.015em;
+  }
+  .landing-copy p {
+    max-width:390px;
+    margin:17px 0 0;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.45;
+  }
+  .landing-copy p b { color:var(--text); font-weight:600; }
+  .connect {
+    border:1px solid var(--text);
+    border-radius:0;
+    background:var(--surface);
+    box-shadow:none;
+    padding:20px;
+  }
+  .connect .lbl { margin-bottom:20px; color:var(--faint); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .connect .row { display:grid; grid-template-columns:1fr auto; gap:8px; }
+  .connect input {
+    min-width:0;
+    padding:11px 0;
+    border:0;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    background:transparent;
+    font-size:12px;
+  }
+  .connect input:focus { border-color:var(--text); box-shadow:none; background:transparent; }
+  .connect .btn { min-height:40px; padding:10px 15px; font-size:12px; }
+  .connect .deploy-link { margin-top:8px; width:100%; justify-content:center; }
+  .landing-stage .connect {
+    max-width:none;
+    margin:0;
+    padding:15px 0 0;
+    border:0;
+    border-top:1px solid var(--text);
+    background:transparent;
+  }
+  .landing-stage .connect .lbl { margin-bottom:12px; }
+  .landing-stage .connect .row {
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:0;
+    border:1px solid var(--text);
+    background:var(--surface);
+  }
+  .landing-stage .connect input {
+    height:44px;
+    padding:0 13px;
+    border:0;
+    font-size:11px;
+  }
+  .landing-stage .connect input:focus { box-shadow:inset 0 0 0 1px var(--text); }
+  .landing-stage .connect .row .btn {
+    min-height:42px;
+    margin:0;
+    border:0;
+    border-left:1px solid var(--text);
+    border-radius:0;
+  }
+  .landing-stage .connect .deploy-link {
+    width:auto;
+    min-height:0;
+    margin:13px 0 0;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:var(--muted);
+    font:500 10px var(--mono);
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .landing-stage .connect .deploy-link:hover { color:var(--text); background:transparent; }
+  .help { margin-top:17px; color:var(--muted); font-size:11px; }
+  .help code,
+  .info code { border-radius:2px; font-size:10px; }
+  .err { font-size:11px; }
+  .settings-panel { max-width:600px !important; margin:0; }
+  .settings-panel .lbl + input { width:100%; }
+  .deploy-result { margin-top:14px; padding:15px 0 0; border-top:1px solid var(--line); }
+
+  .started {
+    max-width:none;
+    margin:120px 0 0;
+    padding-top:18px;
+    border-top:1px solid var(--text);
+  }
+  .started-head {
+    display:grid;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:24px;
+    align-items:start;
+  }
+  .started-head .kicker { grid-column:1 / span 3; }
+  .started-head p { grid-column:5 / span 4; margin:0; color:var(--muted); font-size:14px; }
+  .stepgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:70px; }
+  .stepcol {
+    min-height:180px;
+    padding:15px 0 0;
+    border-top:1px solid var(--line);
+    text-align:left;
+  }
+  .stepcol .no { margin:0 0 45px; color:var(--faint); font:400 10px var(--mono); letter-spacing:.08em; }
+  .stepcol b { margin-bottom:9px; font-size:14px; }
+  .stepcol .d { display:block; max-width:290px; color:var(--muted); font-size:12px; }
+  .stepcol .d a { color:var(--text); }
+  .safe-toggle { max-width:680px; margin:42px 0 0 auto; padding-top:13px; border-top:1px solid var(--line); }
+  .safe-toggle summary { font-size:12px; }
+  .safe-toggle summary b { color:var(--text); }
+  .safe-toggle li { font-size:12px; }
+  .safe-toggle li::before { width:4px; height:4px; border-radius:0; background:var(--text); }
+  .foot {
+    max-width:none;
+    margin:100px 0 0;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    text-align:left;
+    font-size:10px;
+  }
+  .rise { animation:editorial-rise .45s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes editorial-rise { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+  @media (max-width:900px) {
+    .landing-bottom { grid-template-columns:minmax(0,1fr) minmax(320px,380px); gap:40px; }
+    .connect .row { grid-template-columns:1fr; }
+  }
+  @media (max-width:720px) {
+    header { padding:12px 14px; }
+    .who .sub,
+    .toggle { display:none; }
+    .hbtns { gap:4px; }
+    .hbtns .btn { padding:7px 9px; }
+    .controls { align-items:stretch; }
+    #q { width:100%; min-width:100%; }
+    .chips { width:100%; overflow-x:auto; flex-wrap:nowrap; }
+    .counts { width:100%; margin:2px 0 0; }
+    main,
+    body.app main { padding:25px 14px 60px; }
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .statcard:nth-child(2) { border-right:0; }
+    .statcard:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+    .pr-num { display:none; }
+    details.pr > summary { flex-wrap:wrap; }
+    .pr-title { min-width:calc(100% - 38px); }
+    .spacer { display:none; }
+    .when { margin-left:auto; }
+    .landing { padding-top:0; }
+    .landing-stage { min-height:0; padding:16px 0 48px; }
+    .landing-meta { position:static; justify-content:flex-end; gap:14px; }
+    .ascii-field { position:relative; inset:auto; min-height:360px; margin:12px -14px 34px; }
+    .ascii-art { width:min(300px,78vw); transform:translateX(-4px); }
+    .landing-bottom { position:static; display:block; }
+    .landing-copy { max-width:340px; }
+    .landing-copy h1 { font-size:38px; }
+    .landing-copy p { font-size:14px; }
+    .landing-stage .connect { margin-top:50px; }
+    .started { margin-top:90px; }
+    .started-head { display:block; }
+    .started-head p { margin-top:28px; max-width:420px; }
+    .stepgrid { grid-template-columns:1fr; gap:32px; margin-top:52px; }
+    .stepcol { min-height:0; }
+    .stepcol .no { margin-bottom:26px; }
+    .safe-toggle { margin-top:62px; }
+    .foot { margin-top:72px; }
+  }
+</style>
 </head>
 <body>
-<video id="bgvid" autoplay loop muted playsinline preload="auto" aria-hidden="true"><source src="bg.mp4" type="video/mp4"></video><div id="bgscrim"></div>
-<script>(function(){var v=document.getElementById("bgvid");function go(){var p=v&&v.play&&v.play();if(p&&p.catch)p.catch(function(){});}if(v){v.addEventListener("canplay",go);go();document.addEventListener("visibilitychange",function(){if(!document.hidden)go();});}})();</script>
 <header>
   <div class="brand">
     <div class="brand-box" id="brandBox"></div>
@@ -236,17 +650,17 @@
       <a class="btn ghost" id="srcLink" href="#" target="_blank" rel="noopener">Source ↗</a>
       <button class="btn primary hide" id="refresh">↻ Refresh</button>
       <label class="toggle hide" id="autoWrap"><input type="checkbox" id="auto" /> auto 60s</label>
-      <button class="btn hide" id="settings" title="Settings & sign out">⚙︎</button>
+      <button class="btn hide" id="settings" title="Settings & sign out" aria-label="Settings">⚙︎</button>
     </div>
   </div>
   <div class="controls hide" id="controls">
     <input id="q" type="search" placeholder="Filter by title, repo, branch, #number…   (/ to focus)" />
     <div class="chips" id="chips">
-      <span class="chip active" data-f="all">all</span>
-      <span class="chip" data-f="open">open</span>
-      <span class="chip" data-f="closed">closed</span>
-      <span class="chip" data-f="failing">failing</span>
-      <span class="chip" data-f="running">running</span>
+      <button type="button" class="chip active" data-f="all">all</button>
+      <button type="button" class="chip" data-f="open">open</button>
+      <button type="button" class="chip" data-f="closed">closed</button>
+      <button type="button" class="chip" data-f="failing">failing</button>
+      <button type="button" class="chip" data-f="running">running</button>
     </div>
     <span class="counts" id="counts"></span>
   </div>
@@ -256,35 +670,18 @@
 <script>
 const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
-const LS = { token:"prdash_token", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", theme:"prdash_theme" };
+const LS = { token:"prdash_token", author:"prdash_author", hours:"prdash_hours", me:"prdash_me" };
 const HOURS_DEFAULT = 48;
 
-const THEMES = {
-  tomato: { name:"Tomato",        accent:"#FF5A4F", ink:"#E13F36", on:"#ffffff", soft:"#FFE6E2",               line:"rgba(255,90,79,.5)",   hover:"#E94A40" },
-  orange: { name:"Orange",        accent:"#FF8C00", ink:"#C05600", on:"#241400", soft:"rgba(255,140,0,.12)",   line:"rgba(255,140,0,.45)",  hover:"#E67E00" },
-  blue:   { name:"Classic Blue",  accent:"#0F4C81", ink:"#0F4C81", on:"#ffffff", soft:"rgba(15,76,129,.10)",   line:"rgba(15,76,129,.38)",  hover:"#0C3E6B" },
-  green:  { name:"Emerald",       accent:"#009473", ink:"#00795E", on:"#ffffff", soft:"rgba(0,148,115,.12)",   line:"rgba(0,148,115,.40)",  hover:"#007D61" },
-  magenta:{ name:"Magenta",       accent:"#D6409F", ink:"#B12C82", on:"#ffffff", soft:"#FCE7F4",               line:"rgba(214,64,159,.5)", hover:"#C2358F" },
-  purple: { name:"Lavender",      accent:"#C5B8FF", ink:"#6B57D6", on:"#1E163A", soft:"rgba(197,184,255,.20)", line:"rgba(197,184,255,.60)",hover:"#B3A4F5" },
-};
 const get = (k, d) => localStorage.getItem(k) ?? d;
 const $ = id => document.getElementById(id);
-function applyTheme(key){
-  const k = THEMES[key]?key:"tomato", t = THEMES[k], s = document.documentElement.style;
-  s.setProperty("--accent", t.accent); s.setProperty("--accent-ink", t.ink); s.setProperty("--on-accent", t.on);
-  s.setProperty("--accent-soft", t.soft); s.setProperty("--accent-line", t.line); s.setProperty("--accent-hover", t.hover||t.ink);
-  localStorage.setItem(LS.theme, k);
-  if(!ME) $("favicon").href = "data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='"+t.accent+"'/></svg>");
-  document.querySelectorAll(".swatch").forEach(el=>el.classList.toggle("on", el.dataset.t===k));
-}
-function swatchRow(){
-  const cur = get(LS.theme,"tomato");
-  return Object.entries(THEMES).map(([k,t])=>'<button class="swatch'+(k===cur?' on':'')+'" data-t="'+k+'" title="'+t.name+'" aria-label="Theme: '+t.name+'" style="--sw:'+t.accent+'"></button>').join("");
+function applyTheme(){
+  if(!ME) $("favicon").href = "data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='2' fill='#171713'/></svg>");
 }
 
 let DB = null, ME = null, activeFilter = "all", autoTimer = null;
-const ICON = { pass:"✅", fail:"❌", running:"🟡", skip:"⚪", none:"·", other:"⚪" };
-const CIICON = { pass:"✅", fail:"❌", running:"🟡", none:"·" };
+const ICON = { pass:"✓", fail:"×", running:"◌", skip:"–", none:"·", other:"·" };
+const CIICON = { pass:"✓", fail:"×", running:"◌", none:"·" };
 function rel(iso){ if(!iso) return ""; const d=(Date.now()-new Date(iso).getTime())/1000,m=60,h=3600,day=86400;
   if(d<0) return "just now"; if(d<m) return Math.floor(d)+"s ago"; if(d<h) return Math.floor(d/m)+"m ago"; if(d<day) return Math.floor(d/h)+"h ago"; return Math.floor(d/day)+"d ago"; }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -399,7 +796,7 @@ function render(){
     const list=byRepo[repo].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
     const fail=list.filter(p=>p.ci==="fail").length, run=list.filter(p=>p.ci==="running").length;
     const d=document.createElement("details"); d.className="repo"; d.open=true;
-    let badges=""; if(fail)badges+='<span class="badge b-closed">'+fail+' ❌</span>'; if(run)badges+='<span class="badge b-review">'+run+' 🟡</span>';
+    let badges=""; if(fail)badges+='<span class="repo-alert fail">'+fail+' failing</span>'; if(run)badges+='<span class="repo-alert run">'+run+' running</span>';
     d.innerHTML='<summary><span class="rname">'+esc(repo)+'</span> <span class="repo-count">'+list.length+'</span><span class="repo-badges">'+badges+'</span></summary>';
     for(const pr of list){
       const pd=document.createElement("details"); pd.className="pr"; pd.open=expandFail&&(pr.ci==="fail"||activeFilter==="failing");
@@ -407,11 +804,11 @@ function render(){
       if(!pr.checks.length){ checksHtml='<div class="none">No CI checks on this one.</div>'; }
       else { const order={fail:0,running:1,pass:2,skip:3,other:4};
         checksHtml=pr.checks.slice().sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).map(c=>
-          '<div class="check">'+(ICON[c.status]||"·")+' '
+          '<div class="check"><span class="check-mark '+esc(c.status)+'">'+(ICON[c.status]||"·")+'</span>'
           +(c.url?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.name)+'</a>':esc(c.name))
           +(c.workflow?' <span class="wf">· '+esc(c.workflow)+'</span>':'')+'</div>').join(""); }
       const stats=(pr.additions!=null)?'<span class="stat">+'+pr.additions+' −'+pr.deletions+'</span>':'';
-      pd.innerHTML='<summary><span class="ci-dot" title="CI: '+pr.ci+'">'+(CIICON[pr.ci]||"·")+'</span>'
+      pd.innerHTML='<summary><span class="ci-dot ci-'+esc(pr.ci)+'" title="CI: '+pr.ci+'">'+(CIICON[pr.ci]||"·")+'</span>'
         +'<a class="pr-title" href="'+esc(pr.url)+'" target="_blank" rel="noopener">'+esc(pr.title)+'</a>'
         +'<span class="pr-num">#'+pr.number+(pr.branch?' · '+esc(pr.branch):'')+'</span>'
         +stateBadge(pr)+reviewBadge(pr)+'<span class="spacer"></span>'+stats
@@ -438,49 +835,54 @@ function showLanding(errMsg){
   $("refresh").classList.add("hide"); $("autoWrap").classList.add("hide"); $("settings").classList.add("hide");
   $("controls").classList.add("hide"); $("srcLink").classList.remove("hide");
   $("main").innerHTML =
-    '<div class="landing"><div class="hero rise"><span class="kicker">// the PR overview GitHub forgot to build</span>'
-    +'<h1 class="display">See every PR you’re shipping.<br><span class="it">And whether it’s <span class="uline">green</span><sup class="gsup">(<i class="gcheck"></i>)</sup>.</span></h1>'
-    +'<p class="lead"><b>Your open pull requests, plus anything you merged or closed in the last 48 hours.</b> Sorted by repo, each with its CI checks a click away. It runs in your browser on your own token. Nothing lives on a server.</p></div>'
-    +'<div class="pickrow rise"><span class="lbl">// make it yours</span><div class="swatches" id="swatches">'+swatchRow()+'</div></div>'
-    +'<div class="connect rise"><span class="lbl">// paste a GitHub token</span><div class="row">'
-      +'<input id="tok" type="password" placeholder="ghp_…" autocomplete="off" />'
-      +'<button class="btn primary" id="connect">Connect →</button>'
-      +'<button class="btn" id="deploy">Deploy to my GitHub</button>'
-    +'</div>'
-    +'<div class="help"><b>Connect</b> runs it right here. <b>Deploy</b> publishes your own copy to <code>you.github.io/pr-dashboard</code> and hands you the link. Both want a token with the <code>repo</code> scope. Tracking only public repos? A no-scope token is plenty.</div>'
-    +'<div class="err" id="lerr">'+(errMsg?esc(errMsg):"")+'</div><div class="dstatus" id="dstatus"></div></div>'
-    +'<div class="started rise">'
-      +'<span class="kicker">// up and running in a minute</span>'
-      +'<div class="climbwrap"><div class="climb"><div class="archcell"><div class="arch a1"><div class="climber"><svg width="50" height="34" viewBox="0 0 50 34" aria-hidden="true"><circle cx="39" cy="11" r="4.5" fill="#15151c"/><path d="M34 13 L17 19 M34 14 L42 31 M32 15 L27 31 M17 19 L20 32 M17 19 L9 30" fill="none" stroke="#15151c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div><div class="archcell"><div class="arch a2"><div class="climber"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="26" cy="10" r="4.5" fill="#15151c"/><path d="M24 13 L18 26 M23 15 L11 12 M23 17 L11 21 M18 26 L12 38 M18 26 L28 34" fill="none" stroke="#15151c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div><div class="archcell"><div class="arch a3"><div class="climber"><svg width="42" height="48" viewBox="0 0 42 48" aria-hidden="true"><circle cx="21" cy="9" r="5" fill="#15151c"/><path d="M21 14 L21 30 M21 19 L11 13 M21 19 L31 12 M21 30 L14 45 M21 30 L28 45" fill="none" stroke="#15151c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div></div>'
-      +'<div class="steprow">'
-        +'<div class="stepcol"><span class="no">01</span><b>Make a token</b><span class="d">At <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">github.com/settings/tokens/new</a>. Scope <code>repo</code>, set it to never expire.</span></div>'
-        +'<div class="stepcol"><span class="no">02</span><b>Org behind SSO?</b><span class="d">Click <b>Configure SSO</b> on the token and authorize it.</span></div>'
-        +'<div class="stepcol"><span class="no">03</span><b>Paste &amp; Connect</b><span class="d">This browser keeps it. You’re set for good.</span></div>'
-      +'</div></div>'
-      +'<details class="safe-toggle"><summary>Runs entirely in your browser, and your token never leaves this device. <b>Why it’s safe →</b></summary><ul>'
+    '<div class="landing">'
+    +'<section class="landing-stage rise">'
+      +'<div class="landing-meta" aria-label="CI status legend"><span class="pass">[+] pass</span><span class="fail">[x] fail</span><span class="run">[~] running</span></div>'
+      +'<div class="ascii-field"><img class="ascii-art" src="assets/bonsai-ascii.png" alt="ASCII art of a mature bonsai tree in a ceramic pot" draggable="false" /></div>'
+      +'<div class="landing-bottom">'
+      +'<div class="landing-copy"><span class="kicker">PR dashboard / browser-local</span>'
+        +'<h1>One view from branch<br>to merge.</h1>'
+        +'<p><b>Open work, recent closes, live CI.</b> Grouped by repository and kept close without adding another service to the stack.</p>'
+      +'</div>'
+      +'<div class="connect"><span class="lbl">GitHub access token</span><div class="row">'
+      +'<input id="tok" type="password" placeholder="Paste token" autocomplete="off" aria-label="GitHub personal access token" />'
+      +'<button class="btn primary" id="connect">Open dashboard</button>'
+      +'</div><button class="btn deploy-link" id="deploy">or deploy your own copy --&gt;</button>'
+      +'<div class="help">The token is stored only in this browser and sent directly to GitHub. Use <code>repo</code> scope for private repositories; public-only tokens need no scope.</div>'
+      +'<div class="err" id="lerr">'+(errMsg?esc(errMsg):"")+'</div><div class="dstatus" id="dstatus"></div>'
+      +'</div>'
+      +'</div>'
+    +'</section>'
+    +'<section class="started rise">'
+      +'<div class="started-head"><span class="kicker">Setup / about one minute</span><p>One token gives the dashboard a read-only view of the pull requests already attached to your GitHub account.</p></div>'
+      +'<div class="stepgrid">'
+        +'<div class="stepcol"><span class="no">01 / Token</span><b>Create access</b><span class="d">Make a token at <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">GitHub settings</a>. Add <code>repo</code> only when you need private repositories.</span></div>'
+        +'<div class="stepcol"><span class="no">02 / SSO</span><b>Authorize the org</b><span class="d">If your organization uses SSO, choose <b>Configure SSO</b> beside the token and grant access.</span></div>'
+        +'<div class="stepcol"><span class="no">03 / Connect</span><b>Paste it once</b><span class="d">This browser remembers the token. Sign out at any time to remove it completely.</span></div>'
+      +'</div>'
+      +'<details class="safe-toggle"><summary>Runs entirely in your browser, without a server in the middle. <b>Why it’s safe →</b></summary><ul>'
         +'<li><b>No server in the middle.</b> The page is static and talks only to <code>api.github.com</code>, so nothing sits in the middle to log you.</li>'
         +'<li><b>Your token stays put.</b> Kept in this browser, sent to no one but GitHub over HTTPS.</li>'
         +'<li><b>Read the whole thing.</b> One open-source file, no dependencies, no analytics. <a id="srcLink2" href="#" target="_blank" rel="noopener">The source.</a></li>'
         +'<li><b>Read-only and reversible.</b> It never writes to your repos, and Sign out wipes the token.</li>'
       +'</ul></details>'
-    +'</div>'
-    +'<div class="foot">built because GitHub’s PR list deserved better. <a id="srcLink3" href="#" target="_blank" rel="noopener">read the code</a></div></div>';
+    +'</section>'
+    +'<div class="foot">A small, open-source desk for the stretch between push and merge. <a id="srcLink3" href="#" target="_blank" rel="noopener">Read the code ↗</a></div></div>';
   ["srcLink","srcLink2","srcLink3"].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
   const go=()=>{ const tv=$("tok").value.trim(); if(!tv){ $("lerr").textContent="Paste your token first."; return; } localStorage.setItem(LS.token, tv); connectAndLoad(); };
   $("connect").onclick=go; $("deploy").onclick=deployFlow;
   $("tok").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
-  $("tok").focus();
+  $("tok").focus({preventScroll:true});
+  window.scrollTo(0,0);
 }
 
 /* ---------- settings ---------- */
 function showSettings(){
   const author=get(LS.author,"")||(ME&&ME.login)||"", hours=get(LS.hours,HOURS_DEFAULT);
   $("main").innerHTML =
-    '<div class="connect" style="max-width:560px"><span class="lbl">// color theme</span>'
-    +'<div class="swatches" id="swatches" style="margin:2px 0 18px">'+swatchRow()+'</div>'
-    +'<span class="lbl">// whose PRs (defaults to you)</span><input id="sAuth" value="'+esc(author)+'" />'
-    +'<span class="lbl" style="margin-top:14px">// how far back to count closed PRs (hours)</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
-    +'<div class="row" style="margin-top:18px"><button class="btn primary" id="sSave">Save & reload</button>'
+    '<div class="connect settings-panel"><span class="lbl">PR author / defaults to you</span><input id="sAuth" value="'+esc(author)+'" />'
+    +'<span class="lbl" style="margin-top:20px">Closed PR window / hours</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
+    +'<div class="row" style="margin-top:24px"><button class="btn primary" id="sSave">Save and reload</button>'
     +'<button class="btn" id="sOut">Sign out</button></div></div>';
   $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); DB=null; load(); };
   $("sOut").onclick=signOut;
@@ -488,7 +890,7 @@ function showSettings(){
 function signOut(){
   localStorage.removeItem(LS.token); localStorage.removeItem(LS.author); localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me);
   DB=null; ME=null; if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } $("auto").checked=false;
-  applyTheme(get(LS.theme,"tomato")); showLanding();
+  applyTheme(); showLanding();
 }
 
 /* ---------- identity + load ---------- */
@@ -515,7 +917,7 @@ async function load(){
   if(!DB){ $("main").innerHTML='<div class="empty"><span class="spin">↻</span> Rounding up your pull requests…</div>'; }
   try{ DB=await collect(); render(); }
   catch(e){
-    $("main").innerHTML='<div class="connect" style="max-width:560px"><span class="kicker">// couldn’t load</span><p class="err">'+esc(String(e.message||e))+'</p><div class="row" style="margin-top:6px"><button class="btn primary" id="retry">Try again</button><button class="btn" id="fix">Open settings</button></div></div>';
+    $("main").innerHTML='<div class="connect settings-panel"><span class="kicker">Couldn’t load</span><p class="err">'+esc(String(e.message||e))+'</p><div class="row" style="margin-top:6px"><button class="btn primary" id="retry">Try again</button><button class="btn" id="fix">Open settings</button></div></div>';
     const r=$("retry"), f=$("fix"); if(r) r.onclick=load; if(f) f.onclick=showSettings;
   }
   finally{ btn.disabled=false; btn.innerHTML="↻ Refresh"; }
@@ -570,7 +972,7 @@ async function deployFlow(){
     set("Waiting for the first build (~1 min)…");
     const built=await waitBuild(owner,repo);
     $("dstatus").innerHTML =
-      '<div style="margin-top:8px;padding:15px;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:13px">'
+      '<div class="deploy-result">'
       +'<b>'+(built?'It’s live.':'Building… live in ~1 min.')+'</b> Your own copy is at:'
       +'<div style="margin-top:7px"><a href="'+url+'" target="_blank" rel="noopener" class="mono" style="font-size:13.5px;word-break:break-all">'+esc(owner)+'.github.io/pr-dashboard/</a></div>'
       +'<div class="row" style="margin-top:13px"><a class="btn primary" href="'+url+'" target="_blank" rel="noopener">Open it →</a><button class="btn" id="copyUrl">Copy link</button></div>'
@@ -585,13 +987,12 @@ $("srcLink").href=REPO_URL;
 document.addEventListener("input", e=>{ if(e.target.id==="q") render(); });
 $("chips").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(!c)return;
   activeFilter=c.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===c)); render(); });
-document.addEventListener("click", e=>{ const sw=e.target.closest(".swatch"); if(sw) applyTheme(sw.dataset.t); });
 $("refresh").addEventListener("click", load);
 $("settings").addEventListener("click", showSettings);
 $("auto").addEventListener("change", e=>{ if(e.target.checked){ autoTimer=setInterval(load,60000); } else clearInterval(autoTimer); });
 document.addEventListener("keydown", e=>{ const q=$("q"); if(e.key==="/"&&document.activeElement!==q&&q&&q.offsetParent){ e.preventDefault(); q.focus(); } });
 
-applyTheme(get(LS.theme,"tomato"));
+applyTheme();
 if(get(LS.token,"")) connectAndLoad(); else showLanding();
 </script>
 </body>

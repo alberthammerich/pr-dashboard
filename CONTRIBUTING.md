@@ -8,7 +8,7 @@ The whole app is **one file: `index.html`**. No build step, no framework, no dep
 
 ## Run it locally
 
-No tooling required. Either open `index.html` directly, or serve the folder so the video background loads:
+No tooling required. Either open `index.html` directly, or serve the folder to match GitHub Pages locally:
 
 ```bash
 python3 -m http.server 8000
@@ -19,15 +19,14 @@ You'll need a GitHub token to see live data (the landing page walks you through 
 
 ## Good things to know
 
-- **Themes** live in the `THEMES` object in `index.html`. Add one by copying an existing entry (`accent` / `ink` / `on` / `soft` / `line` / `hover`).
 - **The font** (Instrument Serif) is embedded as base64 so the page makes zero external font requests. Please keep it that way.
 - **Data fetching** is client-side REST against `api.github.com` — no server, ever.
-- The connected dashboard is hidden behind a token; the landing (with the video background + setup) is what logged-out visitors see.
+- The connected dashboard is hidden behind a token; the editorial landing page and setup are what logged-out visitors see.
 
 ## How to propose a change
 
 1. **Fork** the repo and create a branch (`fix/…` or `feat/…`).
-2. Make your change in `index.html` and **test it in a real browser** — click through the landing, connect a token, switch a theme.
+2. Make your change in `index.html` and **test it in a real browser** — click through the landing, connect a token, and exercise the search and filters.
 3. Open a **pull request** against `master` with a short description and, for anything visual, a **before/after screenshot**.
 4. A maintainer reviews and merges. **All changes land through pull requests** — nobody pushes to `master` directly, including for review reasons.
 
