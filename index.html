@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PR Dashboard</title>
-<link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23FF5A4F'/%3E%3C/svg%3E" />
+<link id="favicon" rel="icon" href="assets/alberthammerich-avatar.png" />
 <meta name="description" content="A private, open-source dashboard for the GitHub PRs you're working on, with live CI. Runs entirely in your browser." />
 <meta property="og:title" content="PR Dashboard" />
 <meta property="og:description" content="See every PR you're working on, and whether its CI is green. Private, client-side, open source." />
@@ -250,12 +250,14 @@
     width:36px;
     height:36px;
     border-radius:2px;
-    background:var(--text);
+    overflow:hidden;
+    border:1px solid var(--line);
+    background:var(--surface);
     box-shadow:none;
     display:grid;
     place-items:center;
   }
-  .brand-box svg { width:17px; height:17px; fill:var(--surface); }
+  .brand-box img { width:100%; height:100%; display:block; object-fit:cover; }
   .avatar {
     width:36px;
     height:36px;
@@ -635,7 +637,7 @@
 <body>
 <header>
   <div class="brand">
-    <div class="brand-box" id="brandBox"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.64 0 8.13c0 3.59 2.29 6.63 5.47 7.71.4.08.55-.18.55-.39 0-.19-.01-.83-.01-1.5-2.23.49-2.7-.97-2.7-.97-.36-.94-.88-1.19-.88-1.19-.72-.5.05-.49.05-.49.8.06 1.22.84 1.22.84.71 1.24 1.87.88 2.33.67.07-.52.28-.88.51-1.08-1.78-.21-3.65-.91-3.65-4.02 0-.89.31-1.61.82-2.18-.08-.21-.36-1.04.08-2.15 0 0 .67-.22 2.2.83A7.49 7.49 0 0 1 8 3.77c.68 0 1.37.09 2.01.27 1.53-1.05 2.2-.83 2.2-.83.44 1.11.16 1.94.08 2.15.51.57.82 1.29.82 2.18 0 3.12-1.88 3.81-3.66 4.01.29.25.54.75.54 1.52 0 1.09-.01 1.97-.01 2.24 0 .22.14.47.55.39A8.02 8.02 0 0 0 16 8.13C16 3.64 12.42 0 8 0Z" /></svg></div>
+    <a class="brand-box" id="brandBox" href="https://github.com/alberthammerich" target="_blank" rel="noopener" aria-label="Albert Hammerich on GitHub"><img src="assets/alberthammerich-avatar.png" alt="" /></a>
     <img class="avatar hide" id="brandAvatar" alt="" />
     <div class="who">
       <span class="name" id="brandName">pr&middot;dashboard</span>
@@ -672,7 +674,7 @@ const HOURS_DEFAULT = 48;
 const get = (k, d) => localStorage.getItem(k) ?? d;
 const $ = id => document.getElementById(id);
 function applyTheme(){
-  if(!ME) $("favicon").href = "data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='2' fill='#171713'/></svg>");
+  if(!ME) $("favicon").href = "assets/alberthammerich-avatar.png";
 }
 
 let DB = null, ME = null, activeFilter = "all", autoTimer = null;
