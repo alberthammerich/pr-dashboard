@@ -255,12 +255,7 @@
     display:grid;
     place-items:center;
   }
-  .brand-box::before {
-    content:"PR";
-    color:var(--surface);
-    font:700 10px var(--mono);
-    letter-spacing:.04em;
-  }
+  .brand-box svg { width:17px; height:17px; fill:var(--surface); }
   .avatar {
     width:36px;
     height:36px;
@@ -272,9 +267,6 @@
   .who .name b { color:var(--text); }
   .who .sub { color:var(--faint); font-size:11px; }
   .hbtns { gap:7px; }
-  #srcLink { gap:8px; }
-  #srcLink svg { width:15px; height:15px; flex:0 0 auto; fill:currentColor; }
-  #srcLink:hover { color:var(--text); }
   .btn {
     min-height:34px;
     padding:8px 12px;
@@ -449,13 +441,14 @@
     height:auto;
     filter:invert(1);
     mix-blend-mode:multiply;
+    opacity:.64;
     user-select:none;
     transform:translateX(-8px);
     animation:ascii-reveal 1s steps(14,end) .08s both;
   }
   @keyframes ascii-reveal {
-    from { opacity:.15; clip-path:inset(0 100% 0 0); }
-    to { opacity:1; clip-path:inset(0); }
+    from { opacity:.06; clip-path:inset(0 100% 0 0); }
+    to { opacity:.64; clip-path:inset(0); }
   }
   .landing-bottom {
     position:absolute;
@@ -642,7 +635,7 @@
 <body>
 <header>
   <div class="brand">
-    <div class="brand-box" id="brandBox"></div>
+    <div class="brand-box" id="brandBox"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.64 0 8.13c0 3.59 2.29 6.63 5.47 7.71.4.08.55-.18.55-.39 0-.19-.01-.83-.01-1.5-2.23.49-2.7-.97-2.7-.97-.36-.94-.88-1.19-.88-1.19-.72-.5.05-.49.05-.49.8.06 1.22.84 1.22.84.71 1.24 1.87.88 2.33.67.07-.52.28-.88.51-1.08-1.78-.21-3.65-.91-3.65-4.02 0-.89.31-1.61.82-2.18-.08-.21-.36-1.04.08-2.15 0 0 .67-.22 2.2.83A7.49 7.49 0 0 1 8 3.77c.68 0 1.37.09 2.01.27 1.53-1.05 2.2-.83 2.2-.83.44 1.11.16 1.94.08 2.15.51.57.82 1.29.82 2.18 0 3.12-1.88 3.81-3.66 4.01.29.25.54.75.54 1.52 0 1.09-.01 1.97-.01 2.24 0 .22.14.47.55.39A8.02 8.02 0 0 0 16 8.13C16 3.64 12.42 0 8 0Z" /></svg></div>
     <img class="avatar hide" id="brandAvatar" alt="" />
     <div class="who">
       <span class="name" id="brandName">pr&middot;dashboard</span>
@@ -650,7 +643,7 @@
     </div>
     <span class="grow"></span>
     <div class="hbtns" id="brandBtns">
-      <a class="btn ghost" id="srcLink" href="#" target="_blank" rel="noopener" aria-label="View source on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.64 0 8.13c0 3.59 2.29 6.63 5.47 7.71.4.08.55-.18.55-.39 0-.19-.01-.83-.01-1.5-2.23.49-2.7-.97-2.7-.97-.36-.94-.88-1.19-.88-1.19-.72-.5.05-.49.05-.49.8.06 1.22.84 1.22.84.71 1.24 1.87.88 2.33.67.07-.52.28-.88.51-1.08-1.78-.21-3.65-.91-3.65-4.02 0-.89.31-1.61.82-2.18-.08-.21-.36-1.04.08-2.15 0 0 .67-.22 2.2.83A7.49 7.49 0 0 1 8 3.77c.68 0 1.37.09 2.01.27 1.53-1.05 2.2-.83 2.2-.83.44 1.11.16 1.94.08 2.15.51.57.82 1.29.82 2.18 0 3.12-1.88 3.81-3.66 4.01.29.25.54.75.54 1.52 0 1.09-.01 1.97-.01 2.24 0 .22.14.47.55.39A8.02 8.02 0 0 0 16 8.13C16 3.64 12.42 0 8 0Z" /></svg><span>GitHub</span><span aria-hidden="true">↗</span></a>
+      <a class="btn ghost" id="srcLink" href="#" target="_blank" rel="noopener">Source ↗</a>
       <button class="btn primary hide" id="refresh">↻ Refresh</button>
       <label class="toggle hide" id="autoWrap"><input type="checkbox" id="auto" /> auto 60s</label>
       <button class="btn hide" id="settings" title="Settings & sign out" aria-label="Settings">⚙︎</button>
