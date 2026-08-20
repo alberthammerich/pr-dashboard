@@ -215,6 +215,7 @@
 <style id="editorial-redesign">
   :root {
     --accent:#171713; --accent-ink:#171713; --on-accent:#f7f6f1;
+    --branch-ink:#284b57;
     --accent-soft:#e8e6de; --accent-line:#aaa79d; --accent-hover:#32322d;
     --bg:#f2f1ec; --surface:#f8f7f2; --surface2:#eeece5; --inset:#e7e5dd;
     --line:#c9c6bc; --line2:#dedbd2;
@@ -240,15 +241,15 @@
     position:sticky;
     top:0;
     z-index:20;
-    padding:14px max(20px, calc((100vw - 1400px)/2));
+    padding:9px max(20px, calc((100vw - 1400px)/2));
     background:color-mix(in srgb,var(--surface) 94%,transparent);
     border-bottom:1px solid var(--line);
     backdrop-filter:blur(14px);
   }
-  .brand { min-height:38px; gap:11px; }
+  .brand { min-height:32px; gap:10px; }
   .brand-box {
-    width:36px;
-    height:36px;
+    width:30px;
+    height:30px;
     border-radius:2px;
     overflow:hidden;
     border:1px solid var(--line);
@@ -259,8 +260,8 @@
   }
   .brand-box img { width:100%; height:100%; display:block; object-fit:cover; }
   .avatar {
-    width:36px;
-    height:36px;
+    width:30px;
+    height:30px;
     border-radius:2px;
     border:1px solid var(--line);
     box-shadow:none;
@@ -320,7 +321,7 @@
   .chip.active { color:var(--text); border-color:var(--text); background:transparent; }
   .counts { color:var(--faint); font-size:10px; letter-spacing:.03em; }
 
-  main { max-width:1400px; padding:38px 20px 80px; }
+  main { max-width:1400px; padding:18px 20px 64px; }
   body.app main { padding-top:28px; }
   .empty { color:var(--muted); padding:72px 20px; font-family:var(--mono); font-size:12px; }
 
@@ -410,12 +411,11 @@
   }
   .landing-stage {
     position:relative;
-    min-height:calc(100svh - 105px);
-    border-top:1px solid var(--text);
+    min-height:calc(100svh - 72px);
   }
   .landing-meta {
     position:absolute;
-    top:18px;
+    top:2px;
     right:0;
     display:flex;
     align-items:center;
@@ -430,50 +430,132 @@
   .landing-meta .run { color:var(--run); }
   .ascii-field {
     position:absolute;
-    inset:50px 0 230px;
+    inset:18px 0 176px;
     display:grid;
     place-items:center;
     overflow:hidden;
     background:var(--bg);
   }
+  .tree-graph {
+    position:relative;
+    width:clamp(340px,min(34vw,53svh),470px);
+    transform:translateX(-6px);
+    background:var(--bg);
+  }
   .ascii-art {
     margin:0;
     display:block;
-    width:clamp(360px,33vw,470px);
+    width:100%;
     height:auto;
     filter:invert(1);
     mix-blend-mode:multiply;
-    opacity:.64;
+    opacity:.36;
     user-select:none;
-    transform:translateX(-8px);
     animation:ascii-reveal 1s steps(14,end) .08s both;
+  }
+  .tree-branches {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    overflow:visible;
+    pointer-events:none;
+  }
+  .main-stem,
+  .pr-branch {
+    fill:none;
+    stroke:var(--branch-ink);
+    stroke-linecap:round;
+    vector-effect:non-scaling-stroke;
+    filter:drop-shadow(0 0 2.5px var(--bg)) drop-shadow(0 0 2.5px var(--bg));
+  }
+  .main-stem {
+    stroke-width:2;
+    stroke-dasharray:1;
+    stroke-dashoffset:1;
+    opacity:0;
+    animation:skeleton-trunk 9s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  .pr-branch {
+    stroke-width:2.2;
+    stroke-dasharray:1;
+    stroke-dashoffset:1;
+    opacity:0;
+    animation:skeleton-limbs 9s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  .pr-node {
+    fill:var(--bg);
+    stroke:var(--branch-ink);
+    stroke-width:2;
+    vector-effect:non-scaling-stroke;
+    filter:drop-shadow(0 0 4px var(--bg)) drop-shadow(0 0 4px var(--bg));
+    opacity:0;
+    animation:skeleton-details 9s ease-in-out infinite;
+  }
+  .pr-label,
+  .main-label {
+    fill:var(--branch-ink);
+    font:600 20px var(--mono);
+    letter-spacing:.04em;
+  }
+  .pr-label {
+    paint-order:stroke fill;
+    stroke:var(--bg);
+    stroke-width:18px;
+    stroke-linecap:square;
+    stroke-linejoin:round;
+    opacity:0;
+    animation:skeleton-details 9s ease-in-out infinite;
+  }
+  .main-label { opacity:.9; }
+  .ascii-extension {
+    fill:var(--text);
+    opacity:.28;
+    font:600 18px var(--mono);
+    letter-spacing:.08em;
   }
   @keyframes ascii-reveal {
     from { opacity:.06; clip-path:inset(0 100% 0 0); }
-    to { opacity:.64; clip-path:inset(0); }
+    to { opacity:.36; clip-path:inset(0); }
+  }
+  @keyframes skeleton-trunk {
+    0%,3%,100% { stroke-dashoffset:1; opacity:0; }
+    18%,78% { stroke-dashoffset:0; opacity:.9; }
+    94% { opacity:.9; }
+    96% { stroke-dashoffset:1; opacity:0; }
+  }
+  @keyframes skeleton-limbs {
+    0%,13%,100% { stroke-dashoffset:1; opacity:0; }
+    34%,70% { stroke-dashoffset:0; opacity:.98; }
+    88% { opacity:.98; }
+    90% { stroke-dashoffset:1; opacity:0; }
+  }
+  @keyframes skeleton-details {
+    0%,28%,83%,100% { opacity:0; }
+    36%,72% { opacity:.98; }
   }
   .landing-bottom {
     position:absolute;
     left:0;
     right:0;
-    bottom:24px;
+    bottom:8px;
     display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(360px,430px);
-    gap:64px;
+    grid-template-columns:minmax(0,1fr) minmax(340px,400px);
+    gap:48px;
     align-items:end;
   }
   .landing-copy { max-width:430px; }
-  .landing-copy .kicker { display:block; margin-bottom:20px; }
+  .landing-copy .kicker { display:block; margin-bottom:12px; }
   .landing-copy h1 {
     margin:0;
-    font:400 clamp(28px,2.8vw,44px)/.98 var(--serif);
+    font:400 clamp(27px,2.45vw,38px)/.98 var(--serif);
     letter-spacing:-.015em;
   }
   .landing-copy p {
     max-width:390px;
-    margin:17px 0 0;
+    margin:11px 0 0;
     color:var(--muted);
-    font-size:14px;
+    font-size:13px;
     line-height:1.45;
   }
   .landing-copy p b { color:var(--text); font-weight:600; }
@@ -501,12 +583,12 @@
   .landing-stage .connect {
     max-width:none;
     margin:0;
-    padding:15px 0 0;
+    padding:10px 0 0;
     border:0;
     border-top:1px solid var(--text);
     background:transparent;
   }
-  .landing-stage .connect .lbl { margin-bottom:12px; }
+  .landing-stage .connect .lbl { margin-bottom:8px; }
   .landing-stage .connect .row {
     grid-template-columns:minmax(0,1fr) auto;
     gap:0;
@@ -514,14 +596,14 @@
     background:var(--surface);
   }
   .landing-stage .connect input {
-    height:44px;
+    height:40px;
     padding:0 13px;
     border:0;
     font-size:11px;
   }
   .landing-stage .connect input:focus { box-shadow:inset 0 0 0 1px var(--text); }
   .landing-stage .connect .row .btn {
-    min-height:42px;
+    min-height:38px;
     margin:0;
     border:0;
     border-left:1px solid var(--text);
@@ -530,7 +612,7 @@
   .landing-stage .connect .deploy-link {
     width:auto;
     min-height:0;
-    margin:13px 0 0;
+    margin:8px 0 0;
     padding:0;
     border:0;
     background:transparent;
@@ -540,7 +622,7 @@
     text-underline-offset:3px;
   }
   .landing-stage .connect .deploy-link:hover { color:var(--text); background:transparent; }
-  .help { margin-top:17px; color:var(--muted); font-size:11px; }
+  .help { margin-top:10px; color:var(--muted); font-size:10px; }
   .help code,
   .info code { border-radius:2px; font-size:10px; }
   .err { font-size:11px; }
@@ -594,7 +676,7 @@
     .connect .row { grid-template-columns:1fr; }
   }
   @media (max-width:720px) {
-    header { padding:12px 14px; }
+    header { padding:8px 12px; }
     .who .sub,
     .toggle { display:none; }
     .hbtns { gap:4px; }
@@ -604,7 +686,7 @@
     .chips { width:100%; overflow-x:auto; flex-wrap:nowrap; }
     .counts { width:100%; margin:2px 0 0; }
     main,
-    body.app main { padding:25px 14px 60px; }
+    body.app main { padding:12px 14px 48px; }
     .stats { grid-template-columns:repeat(2,1fr); }
     .statcard:nth-child(2) { border-right:0; }
     .statcard:nth-child(-n+2) { border-bottom:1px solid var(--line); }
@@ -614,15 +696,16 @@
     .spacer { display:none; }
     .when { margin-left:auto; }
     .landing { padding-top:0; }
-    .landing-stage { min-height:0; padding:16px 0 48px; }
+    .landing-stage { min-height:0; padding:8px 0 28px; }
     .landing-meta { position:static; justify-content:flex-end; gap:14px; }
-    .ascii-field { position:relative; inset:auto; min-height:360px; margin:12px -14px 34px; }
-    .ascii-art { width:min(300px,78vw); transform:translateX(-4px); }
+    .ascii-field { position:relative; inset:auto; min-height:322px; margin:0 -14px 12px; }
+    .tree-graph { width:min(276px,72vw); transform:translateX(-3px); }
     .landing-bottom { position:static; display:block; }
     .landing-copy { max-width:340px; }
-    .landing-copy h1 { font-size:38px; }
-    .landing-copy p { font-size:14px; }
-    .landing-stage .connect { margin-top:50px; }
+    .landing-copy .kicker { margin-bottom:10px; }
+    .landing-copy h1 { font-size:32px; }
+    .landing-copy p { margin-top:10px; font-size:12px; }
+    .landing-stage .connect { margin-top:24px; }
     .started { margin-top:90px; }
     .started-head { display:block; }
     .started-head p { margin-top:28px; max-width:420px; }
@@ -631,6 +714,18 @@
     .stepcol .no { margin-bottom:26px; }
     .safe-toggle { margin-top:62px; }
     .foot { margin-top:72px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .rise,
+    .ascii-art,
+    .main-stem,
+    .pr-branch,
+    .pr-node,
+    .pr-label { animation:none !important; }
+    .main-stem { stroke-dashoffset:0; opacity:.9; }
+    .pr-branch { stroke-dashoffset:0; opacity:.96; }
+    .pr-node,
+    .pr-label { opacity:.9; transform:none; }
   }
 </style>
 </head>
@@ -680,6 +775,48 @@ function applyTheme(){
 let DB = null, ME = null, activeFilter = "all", autoTimer = null;
 const ICON = { pass:"✓", fail:"×", running:"◌", skip:"–", none:"·", other:"·" };
 const CIICON = { pass:"✓", fail:"×", running:"◌", none:"·" };
+const TREE_GRAPH = `
+  <div class="tree-graph" role="img" aria-label="An animated bonsai-shaped git graph rooted on main with six pull request branches">
+    <img class="ascii-art" src="assets/bonsai-ascii.png" alt="" draggable="false" />
+    <svg class="tree-branches" viewBox="0 0 760 900" aria-hidden="true">
+      <g aria-hidden="true">
+        <text class="ascii-extension" x="286" y="292" text-anchor="end">.,'-..</text>
+        <text class="ascii-extension" x="476" y="234">.-''..</text>
+        <text class="ascii-extension" x="288" y="417" text-anchor="end">.,--..</text>
+        <text class="ascii-extension" x="497" y="373">..--'</text>
+        <text class="ascii-extension" x="306" y="514" text-anchor="end">._.-'</text>
+        <text class="ascii-extension" x="522" y="480">-..'</text>
+      </g>
+
+      <path class="main-stem" pathLength="1" d="M420 704 C421 675 421 648 418 620 C414 592 392 574 401 548 C411 520 389 500 397 474 C406 446 382 430 389 402 C396 373 372 354 381 325 C391 294 366 273 376 241 C382 220 368 195 365 166" />
+      <circle cx="420" cy="704" r="7" fill="var(--bg)" stroke="var(--branch-ink)" stroke-width="2" vector-effect="non-scaling-stroke" opacity=".9" />
+      <text class="main-label" x="350" y="740">[main<tspan class="main-cursor">_</tspan>]</text>
+
+      <path class="pr-branch branch-1" pathLength="1" d="M397 570 C365 548 335 530 306 510 C267 485 226 473 184 475" />
+      <circle class="pr-node branch-1" cx="184" cy="475" r="7" />
+      <text class="pr-label branch-1" x="172" y="481" text-anchor="end">[PR #128]</text>
+
+      <path class="pr-branch branch-2" pathLength="1" d="M402 535 C452 522 487 496 526 477 C559 460 591 457 620 462" />
+      <circle class="pr-node branch-2" cx="620" cy="462" r="7" />
+      <text class="pr-label branch-2" x="632" y="468">[PR #144]</text>
+
+      <path class="pr-branch branch-3" pathLength="1" d="M395 485 C352 461 321 435 286 414 C247 391 208 382 166 386" />
+      <circle class="pr-node branch-3" cx="166" cy="386" r="7" />
+      <text class="pr-label branch-3" x="154" y="392" text-anchor="end">[PR #151]</text>
+
+      <path class="pr-branch branch-4" pathLength="1" d="M388 420 C430 407 462 386 498 370 C533 353 564 345 594 346" />
+      <circle class="pr-node branch-4" cx="594" cy="346" r="7" />
+      <text class="pr-label branch-4" x="606" y="352">[PR #157]</text>
+
+      <path class="pr-branch branch-5" pathLength="1" d="M378 350 C342 333 316 310 286 290 C252 266 225 252 195 255" />
+      <circle class="pr-node branch-5" cx="195" cy="255" r="7" />
+      <text class="pr-label branch-5" x="183" y="261" text-anchor="end">[PR #166]</text>
+
+      <path class="pr-branch branch-6" pathLength="1" d="M374 285 C414 272 446 247 480 230 C512 213 535 205 552 207" />
+      <circle class="pr-node branch-6" cx="552" cy="207" r="7" />
+      <text class="pr-label branch-6" x="564" y="213">[PR #133]</text>
+    </svg>
+  </div>`;
 function rel(iso){ if(!iso) return ""; const d=(Date.now()-new Date(iso).getTime())/1000,m=60,h=3600,day=86400;
   if(d<0) return "just now"; if(d<m) return Math.floor(d)+"s ago"; if(d<h) return Math.floor(d/m)+"m ago"; if(d<day) return Math.floor(d/h)+"h ago"; return Math.floor(d/day)+"d ago"; }
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -836,7 +973,7 @@ function showLanding(errMsg){
     '<div class="landing">'
     +'<section class="landing-stage rise">'
       +'<div class="landing-meta" aria-label="CI status legend"><span class="pass">[+] pass</span><span class="fail">[x] fail</span><span class="run">[~] running</span></div>'
-      +'<div class="ascii-field"><img class="ascii-art" src="assets/bonsai-ascii.png" alt="ASCII art of a mature bonsai tree in a ceramic pot" draggable="false" /></div>'
+      +'<div class="ascii-field">'+TREE_GRAPH+'</div>'
       +'<div class="landing-bottom">'
       +'<div class="landing-copy"><span class="kicker">PR dashboard / browser-local</span>'
         +'<h1>One view from branch<br>to merge.</h1>'
