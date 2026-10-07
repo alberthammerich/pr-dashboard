@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="referrer" content="no-referrer" />
+<!-- The page may only talk to GitHub and the sign-in relay; nothing else can receive data even if a bug slipped in. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com; font-src data:; media-src 'self'; connect-src https://api.github.com https://pr-dashboard-auth.albertbrovsing.workers.dev; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <title>PR Dashboard</title>
 <link id="favicon" rel="icon" href="assets/alberthammerich-avatar.png" />
 <meta name="description" content="A private, open-source dashboard for the GitHub PRs you're working on, with live CI. Runs entirely in your browser." />
@@ -763,11 +766,11 @@
 <script>
 const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
-const LS = { token:"prdash_token", author:"prdash_author", hours:"prdash_hours", me:"prdash_me" };
+const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me" };
 const HOURS_DEFAULT = 48;
 // "Sign in with GitHub": empty clientId hides the button. Only works on the origin the OAuth App's callback is registered for,
 // so self-deployed copies fall back to pasting a token.
-const OAUTH = { clientId:"", exchange:"", home:"https://alberthammerich.github.io/pr-dashboard/" };
+const OAUTH = { clientId:"Ov23liqusWyO1KYoKEr9", exchange:"https://pr-dashboard-auth.albertbrovsing.workers.dev/", home:"https://alberthammerich.github.io/pr-dashboard/" };
 const oauthReady = () => !!(OAUTH.clientId && OAUTH.exchange && location.href.startsWith(OAUTH.home));
 const WAITLIST_URL = REPO_URL+"/issues/2", SPONSOR_URL = "https://github.com/sponsors/alberthammerich";
 
@@ -824,11 +827,27 @@ const TREE_GRAPH = `
   </div>`;
 function rel(iso){ if(!iso) return ""; const d=(Date.now()-new Date(iso).getTime())/1000,m=60,h=3600,day=86400;
   if(d<0) return "just now"; if(d<m) return Math.floor(d)+"s ago"; if(d<h) return Math.floor(d/m)+"m ago"; if(d<day) return Math.floor(d/h)+"h ago"; return Math.floor(d/day)+"d ago"; }
+const safeUrl = u => /^https:\/\//i.test(u||"") ? u : ""; // links come from third-party CI apps; never allow javascript: etc.
 function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 /* ---------- GitHub REST ---------- */
-function api(path){
-  const token = get(LS.token, "");
+// OAuth tokens expire after 8h; renew via the relay. One shared promise, since refresh tokens are single-use.
+let refreshing = null;
+async function freshToken(){
+  const rt=get(LS.refresh,""), exp=Number(get(LS.exp,0));
+  if(rt && Date.now() > exp-5*60000) await (refreshing ||= oauthExchange({refresh_token:rt}).finally(()=>{ refreshing=null; }));
+  return get(LS.token,"");
+}
+async function oauthExchange(body){
+  const r=await fetch(OAUTH.exchange, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+  const j=await r.json();
+  if(!j.access_token) throw new Error("GitHub sign-in failed ("+(j.error||r.status)+"). Please sign in again.");
+  localStorage.setItem(LS.token, j.access_token);
+  if(j.refresh_token){ localStorage.setItem(LS.refresh, j.refresh_token); localStorage.setItem(LS.exp, String(Date.now()+j.expires_in*1000)); }
+  else { localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); }
+}
+async function api(path){
+  const token = await freshToken();
   return fetch("https://api.github.com"+path, { headers:{ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, cache:"no-store" })
   .then(async r=>{
     if(r.status===401) throw new Error("GitHub didn’t accept that token (401). Sign in again.");
@@ -945,11 +964,11 @@ function render(){
       else { const order={fail:0,running:1,pass:2,skip:3,other:4};
         checksHtml=pr.checks.slice().sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).map(c=>
           '<div class="check"><span class="check-mark '+esc(c.status)+'">'+(ICON[c.status]||"·")+'</span>'
-          +(c.url?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.name)+'</a>':esc(c.name))
+          +(safeUrl(c.url)?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.name)+'</a>':esc(c.name))
           +(c.workflow?' <span class="wf">· '+esc(c.workflow)+'</span>':'')+'</div>').join(""); }
       const stats=(pr.additions!=null)?'<span class="stat">+'+pr.additions+' −'+pr.deletions+'</span>':'';
       pd.innerHTML='<summary><span class="ci-dot ci-'+esc(pr.ci)+'" title="CI: '+pr.ci+'">'+(CIICON[pr.ci]||"·")+'</span>'
-        +'<a class="pr-title" href="'+esc(pr.url)+'" target="_blank" rel="noopener">'+esc(pr.title)+'</a>'
+        +'<a class="pr-title" href="'+esc(safeUrl(pr.url))+'" target="_blank" rel="noopener">'+esc(pr.title)+'</a>'
         +'<span class="pr-num">#'+pr.number+(pr.branch?' · '+esc(pr.branch):'')+'</span>'
         +stateBadge(pr)+reviewBadge(pr)+'<span class="spacer"></span>'+stats
         +'<span class="when">'+rel(pr.state==="OPEN"?pr.updatedAt:pr.closedAt)+'</span></summary>'
@@ -1012,7 +1031,7 @@ function showLanding(errMsg){
     +'</section>'
     +'<div class="foot">A small, open-source desk for the stretch between push and merge. <a id="srcLink3" href="#" target="_blank" rel="noopener">Read the code ↗</a></div></div>';
   ["srcLink","srcLink2","srcLink3"].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
-  const go=()=>{ const tv=$("tok").value.trim(); if(!tv){ $("lerr").textContent="Paste your token first."; return; } localStorage.setItem(LS.token, tv); connectAndLoad(); };
+  const go=()=>{ const tv=$("tok").value.trim(); if(!tv){ $("lerr").textContent="Paste your token first."; return; } localStorage.setItem(LS.token, tv); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); connectAndLoad(); };
   $("connect").onclick=go; $("deploy").onclick=deployFlow;
   if($("ghSignIn")) $("ghSignIn").onclick=oauthStart;
   $("tok").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
@@ -1035,10 +1054,7 @@ async function oauthFinish(){
   if(!expected||state!==expected){ showLanding("Sign-in check failed. Please try again."); return true; }
   $("main").innerHTML='<div class="empty"><span class="spin">↻</span> Signing you in…</div>';
   try{
-    const r=await fetch(OAUTH.exchange, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code}) });
-    const j=await r.json();
-    if(!j.access_token) throw new Error("GitHub sign-in failed ("+(j.error||r.status)+"). Please try again.");
-    localStorage.setItem(LS.token, j.access_token); connectAndLoad();
+    await oauthExchange({code}); connectAndLoad();
   }catch(e){ showLanding(String(e.message||e)); }
   return true;
 }
@@ -1050,12 +1066,14 @@ function showSettings(){
     '<div class="connect settings-panel"><span class="lbl">PR author / defaults to you</span><input id="sAuth" value="'+esc(author)+'" />'
     +'<span class="lbl" style="margin-top:20px">Closed PR window / hours</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
     +'<div class="row" style="margin-top:24px"><button class="btn primary" id="sSave">Save and reload</button>'
-    +'<button class="btn" id="sOut">Sign out</button></div></div>';
+    +'<button class="btn" id="sOut">Sign out</button></div>'
+    +(get(LS.refresh,"")?'<div class="help" style="margin-top:16px">Missing PRs from an organization? <a href="https://github.com/settings/connections/applications/'+OAUTH.clientId+'" target="_blank" rel="noopener">Choose which organizations PR Dashboard can see ↗</a></div>':'')
+    +'</div>';
   $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); DB=null; load(); };
   $("sOut").onclick=signOut;
 }
 function signOut(){
-  localStorage.removeItem(LS.token); localStorage.removeItem(LS.author); localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me);
+  localStorage.removeItem(LS.token); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); localStorage.removeItem(LS.author); localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me);
   DB=null; ME=null; if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } $("auto").checked=false;
   applyTheme(); showLanding();
 }
@@ -1094,8 +1112,8 @@ async function load(){
 function b64utf8(s){ return btoa(unescape(encodeURIComponent(s))); }
 function debase64(s){ return decodeURIComponent(escape(atob((s||"").replace(/\s/g,"")))); }
 async function fetchSource(path){ const r=await api("/repos/"+SRC+"/contents/"+path); return debase64(r.content); }
-function ghRaw(path, opts){
-  opts=opts||{}; const token=get(LS.token,"");
+async function ghRaw(path, opts){
+  opts=opts||{}; const token=await freshToken();
   return fetch("https://api.github.com"+path, { method:opts.method||"GET",
     headers:Object.assign({ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, opts.body?{"Content-Type":"application/json"}:{}),
     body:opts.body?JSON.stringify(opts.body):undefined, cache:"no-store" })
@@ -1116,7 +1134,7 @@ async function waitBuild(owner,repo){
 async function deployFlow(){
   const tv=$("tok").value.trim();
   if(!tv){ $("lerr").textContent="Paste a token first. Deploying needs the repo scope."; return; }
-  localStorage.setItem(LS.token, tv);
+  localStorage.setItem(LS.token, tv); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp);
   const dbtn=$("deploy"), cbtn=$("connect"); dbtn.disabled=true; cbtn.disabled=true; $("lerr").textContent="";
   const set=m=>{ $("dstatus").innerHTML='<span class="spin">↻</span> '+esc(m); };
   try{

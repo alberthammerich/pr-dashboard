@@ -2,6 +2,10 @@ name = "pr-dashboard-auth"
 main = "index.js"
 compatibility_date = "2026-10-01"
 
+# Never log requests: bodies carry tokens.
+[observability]
+enabled = false
+
 [vars]
 ALLOWED_ORIGIN = "https://alberthammerich.github.io"
-CLIENT_ID = "" # the OAuth App's Client ID (public). CLIENT_SECRET: `npx wrangler secret put CLIENT_SECRET`
+CLIENT_ID = "Ov23liqusWyO1KYoKEr9" # public. CLIENT_SECRET: `npx wrangler secret put CLIENT_SECRET`
