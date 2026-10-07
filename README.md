@@ -28,7 +28,12 @@ open and just-closed PRs with their CI status. So I made it.
 
 ## Use it
 
-1. Open **https://alberthammerich.github.io/pr-dashboard/**.
+1. Open **https://alberthammerich.github.io/pr-dashboard/** and click **Sign in with GitHub**. Done.
+   If your PRs live in an org with SSO, the org may need to approve the app once.
+
+Prefer a token instead (or on a self-hosted copy)?
+
+1. Open the page.
 2. Create a GitHub token: [github.com/settings/tokens/new](https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard)
    → tick **`repo`** → set **Expiration: No expiration** → **Generate**.
    *(Tracking only public repos? A no-scope token works too.)*
@@ -37,13 +42,16 @@ open and just-closed PRs with their CI status. So I made it.
 
 ## Is it safe? (yes — here's why)
 
-- **No backend.** This is a static page. Nothing you type is sent to any server — only direct
-  HTTPS calls to `api.github.com`.
+- **No backend.** This is a static page. All data calls go straight to `api.github.com`.
+  The one exception: **Sign in with GitHub** sends GitHub's one-time login code through a
+  ~25-line relay ([`worker/index.js`](./worker/index.js)) that swaps it for a token, because GitHub's
+  token endpoint can't be called from a browser. It stores and logs nothing. Pasting a token skips it.
 - **Your token stays local.** It's saved only in your browser's `localStorage`, on your device.
   It is never embedded in the page, the repo, or anywhere else.
 - **Read it yourself.** The entire app is this one [`index.html`](./index.html). There are no
   dependencies, no bundler, no hidden requests, and no analytics.
-- **Read-only.** The token is used only to read your PRs and check statuses.
+- **Read-only in practice.** The dashboard only reads your PRs and check statuses. (GitHub's `repo`
+  scope can't be narrowed to read-only for OAuth apps; paste a fine-grained read-only token if you want that.)
 - **Revoke anytime** at [github.com/settings/tokens](https://github.com/settings/tokens), or click
   **Sign out** in the app to wipe it from your browser.
 
@@ -70,6 +78,17 @@ On connect, the page calls `GET /user` to learn who you are, then uses the GitHu
 **check-runs** and **combined status** to compute a CI rollup. Everything is rendered client-side.
 The GitHub **GraphQL** API isn't usable here because it doesn't send CORS headers to browsers, so
 this uses the REST API throughout.
+
+## Running the sign-in relay
+
+One-time setup for the maintainer's hosted copy (`worker/`, Cloudflare Workers free tier):
+
+1. Create a GitHub OAuth App: Homepage and Callback URL = `https://alberthammerich.github.io/pr-dashboard/`.
+2. Put its Client ID in `worker/wrangler.toml` (`CLIENT_ID`), then from `worker/`:
+   `npx wrangler secret put CLIENT_SECRET` and `npx wrangler deploy`.
+3. Set `OAUTH.clientId` and `OAUTH.exchange` (the printed `*.workers.dev` URL) in `index.html`.
+
+Until those are set, the button stays hidden and the page works with pasted tokens.
 
 ## Contributing
 

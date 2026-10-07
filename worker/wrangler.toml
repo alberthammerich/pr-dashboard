@@ -1,0 +1,7 @@
+name = "pr-dashboard-auth"
+main = "index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://alberthammerich.github.io"
+CLIENT_ID = "" # the OAuth App's Client ID (public). CLIENT_SECRET: `npx wrangler secret put CLIENT_SECRET`
