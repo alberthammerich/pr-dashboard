@@ -1005,7 +1005,10 @@ function showLanding(errMsg){
         +'<p><b>Open work, recent closes, live CI.</b> Grouped by repository and kept close without adding another service to the stack.</p>'
       +'</div>'
       +'<div class="connect">'
-      +(oauthReady()?'<button class="btn primary" id="ghSignIn" style="width:100%;justify-content:center;margin-bottom:14px">Sign in with GitHub</button><span class="lbl">or paste a token</span>':'<span class="lbl">GitHub access token</span>')
+      +(oauthReady()?'<button class="btn primary" id="ghSignIn" style="width:100%;justify-content:center">Sign in with GitHub</button>'
+        +'<div class="help" style="margin:8px 0 18px">Work org shows “Request”? Its admin has to approve the app. Paste a token below to skip that.</div>':'')
+      +'<span class="lbl">Paste a token</span>'
+      +'<div class="help" style="margin:0 0 10px">Have the GitHub CLI? Run <code>gh auth token | pbcopy</code> <button type="button" id="copyGh" style="font:inherit;color:inherit;background:none;border:1px solid var(--line);border-radius:4px;padding:0 6px;cursor:pointer">copy</button> and paste. Works with SSO orgs, no approval needed.</div>'
       +'<div class="row">'
       +'<input id="tok" type="password" placeholder="Paste token" autocomplete="off" aria-label="GitHub personal access token" />'
       +'<button class="btn primary" id="connect">Open dashboard</button>'
@@ -1016,7 +1019,7 @@ function showLanding(errMsg){
       +'</div>'
     +'</section>'
     +'<section class="started rise">'
-      +'<div class="started-head"><span class="kicker">'+(oauthReady()?'Prefer a token? / about one minute':'Setup / about one minute')+'</span><p>One token gives the dashboard a read-only view of the pull requests already attached to your GitHub account.</p></div>'
+      +'<div class="started-head"><span class="kicker">'+(oauthReady()?'No GitHub CLI? / about one minute':'Setup / about one minute')+'</span><p>One token gives the dashboard a read-only view of the pull requests already attached to your GitHub account.</p></div>'
       +'<div class="stepgrid">'
         +'<div class="stepcol"><span class="no">01 / Token</span><b>Create access</b><span class="d">Make a token at <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">GitHub settings</a>. Add <code>repo</code> only when you need private repositories.</span></div>'
         +'<div class="stepcol"><span class="no">02 / SSO</span><b>Authorize the org</b><span class="d">If your organization uses SSO, choose <b>Configure SSO</b> beside the token and grant access.</span></div>'
@@ -1034,6 +1037,7 @@ function showLanding(errMsg){
   const go=()=>{ const tv=$("tok").value.trim(); if(!tv){ $("lerr").textContent="Paste your token first."; return; } localStorage.setItem(LS.token, tv); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); connectAndLoad(); };
   $("connect").onclick=go; $("deploy").onclick=deployFlow;
   if($("ghSignIn")) $("ghSignIn").onclick=oauthStart;
+  $("copyGh").onclick=e=>navigator.clipboard.writeText("gh auth token | pbcopy").then(()=>{ e.target.textContent="copied ✓"; });
   $("tok").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
   $("tok").focus({preventScroll:true});
   window.scrollTo(0,0);

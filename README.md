@@ -31,7 +31,10 @@ open and just-closed PRs with their CI status. So I made it.
 1. Open **https://alberthammerich.github.io/pr-dashboard/** and click **Sign in with GitHub**. Done.
    If your PRs live in an org with SSO, the org may need to approve the app once.
 
-Prefer a token instead (or on a self-hosted copy)?
+Work org asks for admin approval ("Request")? Skip it with the token you already have:
+run `gh auth token | pbcopy` (GitHub CLI) and paste it into the page. SSO orgs work, no approval needed.
+
+No GitHub CLI, or on a self-hosted copy?
 
 1. Open the page.
 2. Create a GitHub token: [github.com/settings/tokens/new](https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard)
