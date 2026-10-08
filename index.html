@@ -33,10 +33,6 @@
   * { box-sizing:border-box; }
   html { background:var(--bg); } /* white base = graceful fallback if video absent (e.g. gist) */
   body { background:transparent; }
-  #bgvid { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
-  #bgscrim { position:fixed; inset:0; z-index:-1; background:rgba(255,255,255,.10); }
-  body.app #bgvid, body.app #bgscrim { display:none; }
-  @media (prefers-reduced-motion: reduce){ #bgvid, #bgscrim { display:none; } }
   body {
     margin:0; color:var(--text); font:14.5px/1.55 var(--sans);
     background:transparent; /* landing: let the video show through (white base is on <html>) */
@@ -186,24 +182,7 @@
   .archcell:nth-child(2) .climber { animation-delay:1.1s; }
   .archcell:nth-child(3) .climber { animation-delay:1.25s; }
   @keyframes climber-in { from { opacity:0; transform:translate(-50%,10px); } to { opacity:1; transform:translate(-50%,0); } }
-  .steprow { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; text-align:center; }
-  .stepcol .no { font-family:var(--serif); font-size:30px; line-height:1; color:var(--accent-ink); display:block; margin-bottom:5px; }
-  .stepcol b { display:block; color:var(--text); font-size:14px; margin-bottom:3px; }
-  .stepcol .d { color:var(--muted); font-size:12.5px; line-height:1.5; }
-  .stepcol .d a { color:var(--accent-ink); }
-  @media (max-width:480px){ .climb, .steprow { gap:12px; } }
   @media (prefers-reduced-motion: reduce){ .arch { animation:none; transform:none; } .climber { animation:none; transform:translateX(-50%); } }
-  .started { max-width:min(780px,94vw); margin:clamp(18px,2.6vh,34px) auto 0; }
-  .started > .kicker { display:block; margin-bottom:11px; }
-  .safe-toggle { margin-top:16px; border-top:1px solid var(--line); padding-top:13px; }
-  .safe-toggle summary { cursor:pointer; list-style:none; color:var(--muted); font-size:13.5px; line-height:1.55; }
-  .safe-toggle summary::-webkit-details-marker { display:none; }
-  .safe-toggle summary b { color:var(--accent-ink); white-space:nowrap; }
-  .safe-toggle[open] summary { margin-bottom:14px; }
-  .safe-toggle ul { margin:0; padding:0; list-style:none; }
-  .safe-toggle li { color:var(--muted); font-size:13px; line-height:1.55; margin:0 0 10px; padding-left:18px; position:relative; }
-  .safe-toggle li::before { content:""; position:absolute; left:0; top:8px; width:6px; height:6px; border-radius:50%; background:var(--accent); }
-  .safe-toggle b { color:var(--text); }
   .foot { max-width:860px; margin:clamp(16px,2.4vh,32px) auto 0; text-align:center; color:var(--faint); font-size:12px; font-family:var(--mono); }
   .dstatus { margin-top:8px; font-size:13px; }
 
@@ -218,7 +197,7 @@
 <style id="editorial-redesign">
   :root {
     --accent:#171713; --accent-ink:#171713; --on-accent:#f7f6f1;
-    --branch-ink:#284b57;
+    --branch-ink:#284b57; --leaf:#26472f; --bark:#5a3c2a; --sun:#b9812f;
     --accent-soft:#e8e6de; --accent-line:#aaa79d; --accent-hover:#32322d;
     --bg:#f2f1ec; --surface:#f8f7f2; --surface2:#eeece5; --inset:#e7e5dd;
     --line:#c9c6bc; --line2:#dedbd2;
@@ -231,12 +210,36 @@
   html { background:var(--bg); }
   body,
   body.app {
-    background:var(--bg);
+    background:transparent; /* --bg lives on <html>, so #wind can sit beneath the page */
     color:var(--text);
     font:14px/1.5 var(--sans);
   }
-  #bgvid,
-  #bgscrim { display:none !important; }
+  /* landing: wind over the meadow (WebGL in initWind); the CSS image is the static fallback */
+  #wind {
+    position:absolute;
+    top:0;
+    left:0;
+    z-index:-1;
+    width:100%;
+    height:100vh;
+    height:100svh;
+    background:url("assets/dunes.jpg") center/cover;
+    -webkit-mask-image:linear-gradient(#000 50%, rgba(0,0,0,.45) 82%, transparent);
+    mask-image:linear-gradient(#000 50%, rgba(0,0,0,.45) 82%, transparent);
+    pointer-events:none;
+  }
+  #wind[data-bg="glass"] { background-image:url("assets/glass.jpg"); }
+  #wind[data-bg="meadow"] { background-image:url("assets/meadow.jpg"); }
+  body.app #wind { /* dashboard: a band behind header + stats, gone before the list starts */
+    height:330px;
+    -webkit-mask-image:linear-gradient(#000 35%, transparent);
+    mask-image:linear-gradient(#000 35%, transparent);
+  }
+  body.app header { background:color-mix(in srgb,var(--surface) 72%,transparent); }
+  body:not(.app) header {
+    background:color-mix(in srgb,var(--surface) 40%,transparent);
+    border-bottom-color:color-mix(in srgb,var(--line) 55%,transparent);
+  }
   a { color:inherit; text-underline-offset:3px; }
   .kicker { color:var(--muted); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
 
@@ -332,7 +335,8 @@
     gap:0;
     margin:0 0 42px;
     border:1px solid var(--line);
-    background:var(--surface);
+    background:color-mix(in srgb,var(--surface) 62%,transparent);
+    backdrop-filter:blur(12px) saturate(1.15);
   }
   .statcard {
     min-height:112px;
@@ -344,7 +348,7 @@
     box-shadow:none;
   }
   .statcard:last-child { border-right:0; }
-  .statcard .n { color:var(--text) !important; font-size:48px; line-height:.9; }
+  .statcard .n { font-size:48px; line-height:.9; }
   .statcard .l { margin-top:13px; color:var(--faint); font-size:9px; letter-spacing:.13em; }
 
   details.repo {
@@ -414,7 +418,11 @@
   }
   .landing-stage {
     position:relative;
-    min-height:calc(100svh - 72px);
+    min-height:calc(100svh - 70px); /* header 52 + main padding 18 */
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    padding-bottom:clamp(24px,4.5svh,48px);
   }
   .landing-meta {
     position:absolute;
@@ -431,117 +439,30 @@
   .landing-meta .pass { color:var(--pass); }
   .landing-meta .fail { color:var(--fail); }
   .landing-meta .run { color:var(--run); }
-  .ascii-field {
+  .bg-switch { display:flex; gap:8px;  }
+  .bg-switch button { padding:0; border:0; background:none; color:inherit; font:inherit; letter-spacing:inherit; text-transform:inherit; cursor:pointer; }
+  .bg-switch button:hover,
+  .bg-switch button[aria-pressed="true"] { color:var(--text); }
+  .bg-switch button[aria-pressed="true"] { text-decoration:underline; text-underline-offset:3px; }
+  .landing-stage .connect { position:relative; }
+  .tree-graph { /* rooted on the token panel's top rule */
     position:absolute;
-    inset:18px 0 176px;
-    display:grid;
-    place-items:center;
-    overflow:hidden;
-    background:var(--bg);
+    right:-24px;
+    bottom:100%;
+    width:clamp(250px,min(36vw,calc(100svh - 480px)),540px);
+    aspect-ratio:1;
   }
-  .tree-graph {
-    position:relative;
-    width:clamp(340px,min(34vw,53svh),470px);
-    transform:translateX(-6px);
-    background:var(--bg);
-  }
-  .ascii-art {
-    margin:0;
-    display:block;
-    width:100%;
-    height:auto;
-    filter:invert(1);
-    mix-blend-mode:multiply;
-    opacity:.36;
-    user-select:none;
-    animation:ascii-reveal 1s steps(14,end) .08s both;
-  }
-  .tree-branches {
+  .tree-graph canvas { position:relative; display:block; width:100%; height:100%; }
+  .tree-graph::before { /* a pool of soft light so the glyphs read on any background */
+    content:"";
     position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    overflow:visible;
+    inset:-8% -20% -4%;
+    background:radial-gradient(closest-side, color-mix(in srgb,var(--bg) 92%,transparent) 30%, color-mix(in srgb,var(--bg) 62%,transparent) 62%, transparent);
+    filter:blur(24px);
     pointer-events:none;
   }
-  .main-stem,
-  .pr-branch {
-    fill:none;
-    stroke:var(--branch-ink);
-    stroke-linecap:round;
-    vector-effect:non-scaling-stroke;
-    filter:drop-shadow(0 0 2.5px var(--bg)) drop-shadow(0 0 2.5px var(--bg));
-  }
-  .main-stem {
-    stroke-width:2;
-    stroke-dasharray:1;
-    stroke-dashoffset:1;
-    opacity:0;
-    animation:skeleton-trunk 9s cubic-bezier(.45,0,.55,1) infinite;
-  }
-  .pr-branch {
-    stroke-width:2.2;
-    stroke-dasharray:1;
-    stroke-dashoffset:1;
-    opacity:0;
-    animation:skeleton-limbs 9s cubic-bezier(.45,0,.55,1) infinite;
-  }
-  .pr-node {
-    fill:var(--bg);
-    stroke:var(--branch-ink);
-    stroke-width:2;
-    vector-effect:non-scaling-stroke;
-    filter:drop-shadow(0 0 4px var(--bg)) drop-shadow(0 0 4px var(--bg));
-    opacity:0;
-    animation:skeleton-details 9s ease-in-out infinite;
-  }
-  .pr-label,
-  .main-label {
-    fill:var(--branch-ink);
-    font:600 20px var(--mono);
-    letter-spacing:.04em;
-  }
-  .pr-label {
-    paint-order:stroke fill;
-    stroke:var(--bg);
-    stroke-width:18px;
-    stroke-linecap:square;
-    stroke-linejoin:round;
-    opacity:0;
-    animation:skeleton-details 9s ease-in-out infinite;
-  }
-  .main-label { opacity:.9; }
-  .ascii-extension {
-    fill:var(--text);
-    opacity:.28;
-    font:600 18px var(--mono);
-    letter-spacing:.08em;
-  }
-  @keyframes ascii-reveal {
-    from { opacity:.06; clip-path:inset(0 100% 0 0); }
-    to { opacity:.36; clip-path:inset(0); }
-  }
-  @keyframes skeleton-trunk {
-    0%,3%,100% { stroke-dashoffset:1; opacity:0; }
-    18%,78% { stroke-dashoffset:0; opacity:.9; }
-    94% { opacity:.9; }
-    96% { stroke-dashoffset:1; opacity:0; }
-  }
-  @keyframes skeleton-limbs {
-    0%,13%,100% { stroke-dashoffset:1; opacity:0; }
-    34%,70% { stroke-dashoffset:0; opacity:.98; }
-    88% { opacity:.98; }
-    90% { stroke-dashoffset:1; opacity:0; }
-  }
-  @keyframes skeleton-details {
-    0%,28%,83%,100% { opacity:0; }
-    36%,72% { opacity:.98; }
-  }
   .landing-bottom {
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:8px;
+    position:relative;
     display:grid;
     grid-template-columns:minmax(0,1fr) minmax(340px,400px);
     gap:48px;
@@ -586,11 +507,14 @@
   .landing-stage .connect {
     max-width:none;
     margin:0;
-    padding:10px 0 0;
-    border:0;
+    padding:16px 18px 14px;
+    border:1px solid color-mix(in srgb,var(--text) 14%,transparent);
     border-top:1px solid var(--text);
-    background:transparent;
+    background:color-mix(in srgb,var(--surface) 80%,transparent);
+    backdrop-filter:blur(14px) saturate(1.1);
   }
+  .landing-stage .err:empty,
+  .landing-stage .dstatus:empty { display:none; }
   .landing-stage .connect .lbl { margin-bottom:8px; }
   .landing-stage .connect .row {
     grid-template-columns:minmax(0,1fr) auto;
@@ -625,47 +549,65 @@
     text-underline-offset:3px;
   }
   .landing-stage .connect .deploy-link:hover { color:var(--text); background:transparent; }
+  .gh-signin { width:100%; min-height:52px; justify-content:center; gap:12px; margin:0 0 10px; }
+  .gh-signin .gh-mark { width:20px; height:20px; flex:none; }
+  .gh-signin span { display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; text-align:left; }
+  .gh-signin small { margin-top:3px; opacity:.62; font:500 9.5px var(--mono); letter-spacing:.08em; text-transform:uppercase; }
+  .help.gh-note { margin:0 0 16px; }
+  .lbl.or { display:flex; align-items:center; gap:10px; }
+  .lbl.or::after { content:""; flex:1; border-top:1px solid var(--line); }
+  .help.gh-cli { margin:0 0 10px; }
+  .copy { padding:0 6px; border:1px solid var(--line); border-radius:2px; background:none; color:inherit; font:inherit; cursor:pointer; }
+  .copy:hover { border-color:var(--text); }
   .help { margin-top:10px; color:var(--muted); font-size:10px; }
   .help code,
   .info code { border-radius:2px; font-size:10px; }
   .err { font-size:11px; }
   .settings-panel { max-width:600px !important; margin:0; }
   .settings-panel .lbl + input { width:100%; }
+  .settings-bg { gap:0; margin-bottom:4px; }
+  .settings-bg button { padding:9px 14px; border:1px solid var(--line); color:var(--muted); font:500 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; }
+  .settings-bg button + button { border-left:0; }
+  .settings-bg button[aria-pressed="true"] { border-color:var(--text); background:var(--text); color:var(--surface); text-decoration:none; }
+  .back { margin:0 0 14px; background:color-mix(in srgb,var(--surface) 82%,transparent); backdrop-filter:blur(10px); }
   .deploy-result { margin-top:14px; padding:15px 0 0; border-top:1px solid var(--line); }
 
-  .started {
-    max-width:none;
-    margin:120px 0 0;
-    padding-top:18px;
-    border-top:1px solid var(--text);
+  .started { margin:96px 0 0; }
+  .started h2 { margin:0; font:400 clamp(30px,3vw,44px)/1 var(--serif); letter-spacing:-.015em; }
+  .started h2 i { color:var(--muted); }
+  /* setup as a git graph: three commits on one branch */
+  .gitsteps { position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin:40px 0 0; padding:0; list-style:none; }
+  .gitsteps::before {
+    content:"";
+    position:absolute;
+    left:6px;
+    right:0;
+    top:5px;
+    height:2px;
+    background:var(--branch-ink);
+    transform-origin:left;
+    animation:git-draw linear both;
+    animation-timeline:view();
+    animation-range:entry 20% cover 45%;
   }
-  .started-head {
-    display:grid;
-    grid-template-columns:repeat(12,minmax(0,1fr));
-    gap:24px;
-    align-items:start;
-  }
-  .started-head .kicker { grid-column:1 / span 3; }
-  .started-head p { grid-column:5 / span 4; margin:0; color:var(--muted); font-size:14px; }
-  .stepgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:70px; }
-  .stepcol {
-    min-height:180px;
-    padding:15px 0 0;
-    border-top:1px solid var(--line);
-    text-align:left;
-  }
-  .stepcol .no { margin:0 0 45px; color:var(--faint); font:400 10px var(--mono); letter-spacing:.08em; }
-  .stepcol b { margin-bottom:9px; font-size:14px; }
-  .stepcol .d { display:block; max-width:290px; color:var(--muted); font-size:12px; }
-  .stepcol .d a { color:var(--text); }
-  .safe-toggle { max-width:680px; margin:42px 0 0 auto; padding-top:13px; border-top:1px solid var(--line); }
-  .safe-toggle summary { font-size:12px; }
-  .safe-toggle summary b { color:var(--text); }
-  .safe-toggle li { font-size:12px; }
-  .safe-toggle li::before { width:4px; height:4px; border-radius:0; background:var(--text); }
+  @keyframes git-draw { from { transform:scaleX(0); } }
+  .gitsteps li { position:relative; padding-top:30px; }
+  .gitsteps li::before { content:""; position:absolute; left:0; top:0; width:12px; height:12px; box-sizing:border-box; border-radius:50%; background:var(--bg); border:2px solid var(--branch-ink); }
+  .gitsteps li:last-child::before { background:var(--pass); }
+  .gitsteps .no { display:block; margin-bottom:8px; color:var(--faint); font:500 11px var(--mono); letter-spacing:.08em; }
+  .gitsteps b { display:block; margin-bottom:6px; font-size:15px; }
+  .gitsteps .d { display:block; max-width:300px; color:var(--muted); font-size:13px; line-height:1.5; }
+  .gitsteps .d b { display:inline; margin:0; font-size:inherit; color:var(--text); }
+  .gitsteps a { color:var(--text); }
+  .gitsteps code,
+  .facts code { padding:1px 5px; border:1px solid var(--line); border-radius:2px; background:var(--inset); color:var(--text); font:11.5px var(--mono); }
+  .facts { display:grid; grid-template-columns:repeat(4,1fr); gap:32px; margin:64px 0 0; padding:20px 0 0; list-style:none; border-top:1px solid var(--line); }
+  .facts li { color:var(--muted); font-size:13px; line-height:1.5; }
+  .facts b { display:block; margin-bottom:5px; color:var(--text); font:600 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; }
+  .facts a { color:var(--text); }
   .foot {
     max-width:none;
-    margin:100px 0 0;
+    margin:72px 0 0;
     padding-top:16px;
     border-top:1px solid var(--line);
     text-align:left;
@@ -679,6 +621,7 @@
     .connect .row { grid-template-columns:1fr; }
   }
   @media (max-width:720px) {
+    #wind { height:62svh; } /* fade out before the copy so it sits on paper, not grass */
     header { padding:8px 12px; }
     .who .sub,
     .toggle { display:none; }
@@ -699,40 +642,35 @@
     .spacer { display:none; }
     .when { margin-left:auto; }
     .landing { padding-top:0; }
-    .landing-stage { min-height:0; padding:8px 0 28px; }
+    .landing-stage { display:block; min-height:0; padding:8px 0 28px; }
     .landing-meta { position:static; justify-content:flex-end; gap:14px; }
-    .ascii-field { position:relative; inset:auto; min-height:322px; margin:0 -14px 12px; }
-    .tree-graph { width:min(276px,72vw); transform:translateX(-3px); }
+    .tree-graph { position:relative; right:auto; bottom:auto; width:100%; height:min(88vw,400px); aspect-ratio:auto; margin:0 0 10px; border-bottom:1px solid var(--text); } /* the ground it stands on */
+    .tree-graph canvas { width:auto; aspect-ratio:1; margin:0 auto; }
+    .landing-stage .connect { padding:0; border:0; background:none; backdrop-filter:none; }
+    .landing-meta { margin-bottom:18px; }
+    .landing-copy { position:relative; }
+    .landing-copy::before { content:""; position:absolute; inset:-36px -64px -44px; z-index:-1; background:radial-gradient(farthest-side, color-mix(in srgb,var(--bg) 90%,transparent) 62%, transparent); filter:blur(16px); }
     .landing-bottom { position:static; display:block; }
     .landing-copy { max-width:340px; }
     .landing-copy .kicker { margin-bottom:10px; }
     .landing-copy h1 { font-size:32px; }
     .landing-copy p { margin-top:10px; font-size:12px; }
     .landing-stage .connect { margin-top:24px; }
-    .started { margin-top:90px; }
-    .started-head { display:block; }
-    .started-head p { margin-top:28px; max-width:420px; }
-    .stepgrid { grid-template-columns:1fr; gap:32px; margin-top:52px; }
-    .stepcol { min-height:0; }
-    .stepcol .no { margin-bottom:26px; }
-    .safe-toggle { margin-top:62px; }
-    .foot { margin-top:72px; }
+    .started { margin-top:40px; }
+    .gitsteps { grid-template-columns:1fr; gap:28px; padding-left:28px; }
+    .gitsteps::before { left:5px; right:auto; top:6px; bottom:6px; width:2px; height:auto; animation:none; }
+    .gitsteps li { padding-top:0; }
+    .gitsteps li::before { left:-28px; top:3px; }
+    .facts { grid-template-columns:1fr 1fr; gap:24px; margin-top:48px; }
+    .foot { margin-top:56px; }
   }
   @media (prefers-reduced-motion:reduce) {
-    .rise,
-    .ascii-art,
-    .main-stem,
-    .pr-branch,
-    .pr-node,
-    .pr-label { animation:none !important; }
-    .main-stem { stroke-dashoffset:0; opacity:.9; }
-    .pr-branch { stroke-dashoffset:0; opacity:.96; }
-    .pr-node,
-    .pr-label { opacity:.9; transform:none; }
+    .rise { animation:none !important; }
   }
 </style>
 </head>
 <body>
+<canvas id="wind" aria-hidden="true"></canvas>
 <header>
   <div class="brand">
     <a class="brand-box" id="brandBox" href="https://github.com/alberthammerich" target="_blank" rel="noopener" aria-label="Albert Hammerich on GitHub"><img src="assets/alberthammerich-avatar.png" alt="" /></a>
@@ -766,7 +704,7 @@
 <script>
 const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
-const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me" };
+const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg" };
 const HOURS_DEFAULT = 48;
 // "Sign in with GitHub": empty clientId hides the button. Only works on the origin the OAuth App's callback is registered for,
 // so self-deployed copies fall back to pasting a token.
@@ -783,48 +721,7 @@ function applyTheme(){
 let DB = null, ME = null, activeFilter = "all", autoTimer = null;
 const ICON = { pass:"✓", fail:"×", running:"◌", skip:"–", none:"·", other:"·" };
 const CIICON = { pass:"✓", fail:"×", running:"◌", none:"·" };
-const TREE_GRAPH = `
-  <div class="tree-graph" role="img" aria-label="An animated bonsai-shaped git graph rooted on main with six pull request branches">
-    <img class="ascii-art" src="assets/bonsai-ascii.png" alt="" draggable="false" />
-    <svg class="tree-branches" viewBox="0 0 760 900" aria-hidden="true">
-      <g aria-hidden="true">
-        <text class="ascii-extension" x="286" y="292" text-anchor="end">.,'-..</text>
-        <text class="ascii-extension" x="476" y="234">.-''..</text>
-        <text class="ascii-extension" x="288" y="417" text-anchor="end">.,--..</text>
-        <text class="ascii-extension" x="497" y="373">..--'</text>
-        <text class="ascii-extension" x="306" y="514" text-anchor="end">._.-'</text>
-        <text class="ascii-extension" x="522" y="480">-..'</text>
-      </g>
-
-      <path class="main-stem" pathLength="1" d="M420 704 C421 675 421 648 418 620 C414 592 392 574 401 548 C411 520 389 500 397 474 C406 446 382 430 389 402 C396 373 372 354 381 325 C391 294 366 273 376 241 C382 220 368 195 365 166" />
-      <circle cx="420" cy="704" r="7" fill="var(--bg)" stroke="var(--branch-ink)" stroke-width="2" vector-effect="non-scaling-stroke" opacity=".9" />
-      <text class="main-label" x="350" y="740">[main<tspan class="main-cursor">_</tspan>]</text>
-
-      <path class="pr-branch branch-1" pathLength="1" d="M397 570 C365 548 335 530 306 510 C267 485 226 473 184 475" />
-      <circle class="pr-node branch-1" cx="184" cy="475" r="7" />
-      <text class="pr-label branch-1" x="172" y="481" text-anchor="end">[PR #128]</text>
-
-      <path class="pr-branch branch-2" pathLength="1" d="M402 535 C452 522 487 496 526 477 C559 460 591 457 620 462" />
-      <circle class="pr-node branch-2" cx="620" cy="462" r="7" />
-      <text class="pr-label branch-2" x="632" y="468">[PR #144]</text>
-
-      <path class="pr-branch branch-3" pathLength="1" d="M395 485 C352 461 321 435 286 414 C247 391 208 382 166 386" />
-      <circle class="pr-node branch-3" cx="166" cy="386" r="7" />
-      <text class="pr-label branch-3" x="154" y="392" text-anchor="end">[PR #151]</text>
-
-      <path class="pr-branch branch-4" pathLength="1" d="M388 420 C430 407 462 386 498 370 C533 353 564 345 594 346" />
-      <circle class="pr-node branch-4" cx="594" cy="346" r="7" />
-      <text class="pr-label branch-4" x="606" y="352">[PR #157]</text>
-
-      <path class="pr-branch branch-5" pathLength="1" d="M378 350 C342 333 316 310 286 290 C252 266 225 252 195 255" />
-      <circle class="pr-node branch-5" cx="195" cy="255" r="7" />
-      <text class="pr-label branch-5" x="183" y="261" text-anchor="end">[PR #166]</text>
-
-      <path class="pr-branch branch-6" pathLength="1" d="M374 285 C414 272 446 247 480 230 C512 213 535 205 552 207" />
-      <circle class="pr-node branch-6" cx="552" cy="207" r="7" />
-      <text class="pr-label branch-6" x="564" y="213">[PR #133]</text>
-    </svg>
-  </div>`;
+const TREE_GRAPH = `<div class="tree-graph" role="img" aria-label="A pine drawn in ASCII: the trunk is main and each branch is a pull request, marked with its CI status"><canvas id="tree"></canvas></div>`;
 function rel(iso){ if(!iso) return ""; const d=(Date.now()-new Date(iso).getTime())/1000,m=60,h=3600,day=86400;
   if(d<0) return "just now"; if(d<m) return Math.floor(d)+"s ago"; if(d<h) return Math.floor(d/m)+"m ago"; if(d<day) return Math.floor(d/h)+"h ago"; return Math.floor(d/day)+"d ago"; }
 const safeUrl = u => /^https:\/\//i.test(u||"") ? u : ""; // links come from third-party CI apps; never allow javascript: etc.
@@ -997,18 +894,17 @@ function showLanding(errMsg){
   $("main").innerHTML =
     '<div class="landing">'
     +'<section class="landing-stage rise">'
-      +'<div class="landing-meta" aria-label="CI status legend"><span class="pass">[+] pass</span><span class="fail">[x] fail</span><span class="run">[~] running</span></div>'
-      +'<div class="ascii-field">'+TREE_GRAPH+'</div>'
+      +'<div class="landing-meta"><span class="bg-switch" role="group" aria-label="Background">'+BG_BUTTONS+'</span><span class="pass">[+] pass</span><span class="fail">[x] fail</span><span class="run">[~] running</span></div>'
       +'<div class="landing-bottom">'
       +'<div class="landing-copy"><span class="kicker">PR dashboard / browser-local</span>'
         +'<h1>One view from branch<br>to merge.</h1>'
         +'<p><b>Open work, recent closes, live CI.</b> Grouped by repository and kept close without adding another service to the stack.</p>'
       +'</div>'
-      +'<div class="connect">'
-      +(oauthReady()?'<button class="btn primary" id="ghSignIn" style="width:100%;justify-content:center">Sign in with GitHub</button>'
-        +'<div class="help" style="margin:8px 0 18px">Work org shows “Request”? Its admin has to approve the app. Paste a token below to skip that.</div>':'')
-      +'<span class="lbl">Paste a token</span>'
-      +'<div class="help" style="margin:0 0 10px">Have the GitHub CLI? Run <code>gh auth token | pbcopy</code> <button type="button" id="copyGh" style="font:inherit;color:inherit;background:none;border:1px solid var(--line);border-radius:4px;padding:0 6px;cursor:pointer">copy</button> and paste. Works with SSO orgs, no approval needed.</div>'
+      +'<div class="connect">'+TREE_GRAPH
+      +(oauthReady()?'<button class="btn primary gh-signin" id="ghSignIn"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>Sign in with GitHub<small>Install as third-party app</small></span></button>'
+        +'<div class="help gh-note">Work org shows “Request”? Its admin has to approve the app. Paste a token below to skip that.</div>'
+        +'<span class="lbl or">or paste a token</span>':'<span class="lbl">Paste a token</span>')
+      +'<div class="help gh-cli">Have the GitHub CLI? Run <code>gh auth token | pbcopy</code> <button type="button" class="copy" id="copyGh">copy</button> and paste. Works with SSO orgs, no approval needed.</div>'
       +'<div class="row">'
       +'<input id="tok" type="password" placeholder="Paste token" autocomplete="off" aria-label="GitHub personal access token" />'
       +'<button class="btn primary" id="connect">Open dashboard</button>'
@@ -1018,19 +914,19 @@ function showLanding(errMsg){
       +'</div>'
       +'</div>'
     +'</section>'
-    +'<section class="started rise">'
-      +'<div class="started-head"><span class="kicker">'+(oauthReady()?'No GitHub CLI? / about one minute':'Setup / about one minute')+'</span><p>One token gives the dashboard a read-only view of the pull requests already attached to your GitHub account.</p></div>'
-      +'<div class="stepgrid">'
-        +'<div class="stepcol"><span class="no">01 / Token</span><b>Create access</b><span class="d">Make a token at <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">GitHub settings</a>. Add <code>repo</code> only when you need private repositories.</span></div>'
-        +'<div class="stepcol"><span class="no">02 / SSO</span><b>Authorize the org</b><span class="d">If your organization uses SSO, choose <b>Configure SSO</b> beside the token and grant access.</span></div>'
-        +'<div class="stepcol"><span class="no">03 / Connect</span><b>Paste it once</b><span class="d">This browser remembers the token. Sign out at any time to remove it completely.</span></div>'
-      +'</div>'
-      +'<details class="safe-toggle"><summary>Runs in your browser. <b>Why it’s safe →</b></summary><ul>'
-        +'<li><b>No server in the middle.</b> The page is static and talks only to <code>api.github.com</code>. <b>Sign in with GitHub</b> passes through a tiny open-source relay once, to swap GitHub’s login code for a token. It stores and logs nothing.</li>'
-        +'<li><b>Your token stays put.</b> Kept in this browser, sent to no one but GitHub over HTTPS.</li>'
-        +'<li><b>Read the whole thing.</b> One open-source file, no dependencies, no analytics. <a id="srcLink2" href="#" target="_blank" rel="noopener">The source.</a></li>'
-        +'<li><b>Read-only and reversible.</b> It never writes to your repos, and Sign out wipes the token.</li>'
-      +'</ul></details>'
+    +'<section class="started">'
+      +'<h2>'+(oauthReady()?'No GitHub CLI? <i>A token takes a minute.</i>':'Up and running <i>in a minute.</i>')+'</h2>'
+      +'<ol class="gitsteps">'
+        +'<li><span class="no">01 / token</span><b>Create a token</b><span class="d">At <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Dashboard" target="_blank" rel="noopener">GitHub settings</a>. Add <code>repo</code> only if you need private repositories.</span></li>'
+        +'<li><span class="no">02 / sso</span><b>Authorize your org</b><span class="d">If your organization uses SSO, choose <b>Configure SSO</b> next to the token and grant access.</span></li>'
+        +'<li><span class="no">03 / connect</span><b>Paste it once</b><span class="d">This browser remembers it. Signing out wipes it.</span></li>'
+      +'</ol>'
+      +'<ul class="facts">'
+        +'<li><b>No server in the middle</b>A static page that talks only to <code>api.github.com</code>. Sign in with GitHub passes once through a tiny open-source relay that stores and logs nothing.</li>'
+        +'<li><b>Token stays here</b>Kept in this browser and sent to no one but GitHub.</li>'
+        +'<li><b>One open file</b>No dependencies, no analytics. <a id="srcLink2" href="#" target="_blank" rel="noopener">Read it.</a></li>'
+        +'<li><b>Read-only</b>It never writes to your repositories.</li>'
+      +'</ul>'
     +'</section>'
     +'<div class="foot">A small, open-source desk for the stretch between push and merge. <a id="srcLink3" href="#" target="_blank" rel="noopener">Read the code ↗</a></div></div>';
   ["srcLink","srcLink2","srcLink3"].forEach(id=>{ const el=$(id); if(el) el.href=REPO_URL; });
@@ -1040,6 +936,8 @@ function showLanding(errMsg){
   $("copyGh").onclick=e=>navigator.clipboard.writeText("gh auth token | pbcopy").then(()=>{ e.target.textContent="copied ✓"; });
   $("tok").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
   $("tok").focus({preventScroll:true});
+  wireBgSwitch();
+  initTree($("tree"));
   window.scrollTo(0,0);
 }
 
@@ -1067,7 +965,9 @@ async function oauthFinish(){
 function showSettings(){
   const author=get(LS.author,"")||(ME&&ME.login)||"", hours=get(LS.hours,HOURS_DEFAULT);
   $("main").innerHTML =
-    '<div class="connect settings-panel"><span class="lbl">PR author / defaults to you</span><input id="sAuth" value="'+esc(author)+'" />'
+    '<button class="btn back" id="sBack">← Back to dashboard</button>'
+    +'<div class="connect settings-panel"><span class="lbl">Background</span><span class="bg-switch settings-bg" role="group" aria-label="Background">'+BG_BUTTONS+'</span>'
+    +'<span class="lbl" style="margin-top:20px">PR author / defaults to you</span><input id="sAuth" value="'+esc(author)+'" />'
     +'<span class="lbl" style="margin-top:20px">Closed PR window / hours</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
     +'<div class="row" style="margin-top:24px"><button class="btn primary" id="sSave">Save and reload</button>'
     +'<button class="btn" id="sOut">Sign out</button></div>'
@@ -1075,6 +975,8 @@ function showSettings(){
     +'</div>';
   $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); DB=null; load(); };
   $("sOut").onclick=signOut;
+  $("sBack").onclick=()=>DB?render():load();
+  wireBgSwitch();
 }
 function signOut(){
   localStorage.removeItem(LS.token); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); localStorage.removeItem(LS.author); localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me);
@@ -1181,7 +1083,288 @@ $("settings").addEventListener("click", showSettings);
 $("auto").addEventListener("change", e=>{ if(e.target.checked){ autoTimer=setInterval(load,60000); } else clearInterval(autoTimer); });
 document.addEventListener("keydown", e=>{ const q=$("q"); if(e.key==="/"&&document.activeElement!==q&&q&&q.offsetParent){ e.preventDefault(); q.focus(); } });
 
-applyTheme();
+/* ---------- landing background: wind over the meadow, or flowers behind reeded glass ---------- */
+const BGS = { meadow:"assets/meadow.jpg", glass:"assets/glass.jpg", dunes:"assets/dunes.jpg" };
+const WIND_FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform sampler2D T; uniform vec2 R, I; uniform float t, M;
+float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+1.),f.x), f.y); }
+vec2 cover(vec2 s){ return (s-.5*R)/(I*max(R.x/I.x, R.y/I.y))*.985+.5; }   // object-fit: cover, slightly overscanned so swaying never samples past the edge
+vec3 field(vec2 uv, float grass, float still){            // grass in the wind; still: 1 where things must not move
+  float depth=grass*uv.y*uv.y*(1.-still);                  // foreground sways most
+  float g=smoothstep(.3,.85,n(vec2(uv.x*2.4-t*.5, uv.y*3.5+t*.04)));  // gusts rolling left to right
+  float sway=sin(t*2.2 - uv.x*10. + uv.y*55. + n(uv*vec2(16,42))*6.);  // neighbouring tufts out of phase
+  float dx=depth*(.0025+.009*g)*(.55+.45*sway);
+  float sky=(1.-grass)*(1.-still)*.004*sin(t*.08+uv.y*5.);
+  vec3 c=texture2D(T, uv-vec2(dx+sky, dx*.3)).rgb;
+  float lit=grass*(1.-still);
+  return c*(1.-.05*lit*(1.-g)) + vec3(1.,.96,.86)*.08*lit*g*g;  // bent grass catches the light
+}
+vec3 meadow(vec2 s){ vec2 uv=cover(s); return field(uv, smoothstep(.5,.66,uv.y), 0.); }
+float box(vec2 uv, vec4 r){ vec2 d=abs(uv-r.xy)-r.zw; return 1.-smoothstep(0.,.02,max(d.x,d.y)); }
+vec3 dunes(vec2 s){
+  vec2 uv=cover(s);
+  float L=.34+.18*uv.x;                                    // the treeline runs downhill to the right
+  float huts=max(max(box(uv,vec4(.2443,.62,.078,.077)), box(uv,vec4(.2989,.5312,.061,.026))),
+             max(max(box(uv,vec4(.4029,.575,.078,.058)), box(uv,vec4(.5684,.5938,.08,.051))), box(uv,vec4(.686,.5575,.059,.039))));
+  return field(uv, smoothstep(L,L+.08,uv.y), huts);
+}
+vec3 glass(vec2 s){
+  float W=R.y/54., fx=s.x/W, u=fract(fx)*2.-1.;          // rib width matched to the photo; u: -1..1 across a rib
+  vec2 b=cover(vec2((floor(fx)+.5)*W - u*W*2.4, s.y));  // each rib is a lens: a wider, mirrored slice of what's behind
+  float stem=smoothstep(1.,.3,b.y), gust=n(vec2(b.x*1.6-t*.4, t*.15));  // flowers move, roots stay; gusts travel left to right
+  b+=stem*vec2(.012*sin(t*.7+b.y*2.6+b.x*3.)+.03*(gust-.5), .012*sin(t*1.1+b.x*9.)+.008*sin(t*1.9+b.x*23.));
+  vec3 c=vec3(0);
+  for(int i=-4;i<=4;i++) c+=texture2D(T, b+vec2(float(i)*.0045,0.)).rgb;  // average out the ribs baked into the photo
+  c/=9.;
+  return c*(1.-.09*smoothstep(-.2,1.,u)) + .06*smoothstep(.6,1.,-u);  // lit left lip, shadowed right flank
+}
+void main(){
+  vec2 s=vec2(gl_FragCoord.x, R.y-gl_FragCoord.y);
+  gl_FragColor=vec4(M>1.5 ? dunes(s) : M>.5 ? glass(s) : meadow(s), 1);
+}`;
+let wind=null;
+function initWind(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return; // static CSS image stays
+  const cv=$("wind"), gl=cv.getContext("webgl",{antialias:false});
+  if(!gl) return;
+  const pg=gl.createProgram();
+  [[gl.VERTEX_SHADER,"attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}"],[gl.FRAGMENT_SHADER,WIND_FS]].forEach(([type,src])=>{
+    const sh=gl.createShader(type); gl.shaderSource(sh,src); gl.compileShader(sh); gl.attachShader(pg,sh); });
+  gl.bindAttribLocation(pg,0,"p"); gl.linkProgram(pg);
+  if(!gl.getProgramParameter(pg,gl.LINK_STATUS)) return;
+  gl.useProgram(pg);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW); // one full-screen triangle
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  const U=k=>gl.getUniformLocation(pg,k), uR=U("R"), uT=U("t"), tex={};
+  let raf=0, ready=false;
+  const frame=ms=>{
+    raf=requestAnimationFrame(frame);
+    if(!ready) return;
+    const d=Math.min(devicePixelRatio,1.5), w=Math.round(cv.clientWidth*d), hh=Math.round(cv.clientHeight*d);
+    if(cv.width!==w||cv.height!==hh){ cv.width=w; cv.height=hh; gl.viewport(0,0,w,hh); gl.uniform2f(uR,w,hh); }
+    gl.uniform1f(uT, ms/1000); gl.drawArrays(gl.TRIANGLES,0,3);
+  };
+  // only animate while visible: stops when scrolled past or hidden by body.app
+  new IntersectionObserver(([e])=>{ cancelAnimationFrame(raf); raf=e.isIntersecting?requestAnimationFrame(frame):0; }).observe(cv);
+  const use=mode=>{ gl.bindTexture(gl.TEXTURE_2D, tex[mode].t); gl.uniform2f(U("I"), tex[mode].w, tex[mode].h); gl.uniform1f(U("M"), Object.keys(BGS).indexOf(mode)); ready=true; };
+  wind={ set(mode){
+    if(tex[mode]) return use(mode);
+    const img=new Image();
+    img.onload=()=>{
+      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,img);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      tex[mode]={t, w:img.width, h:img.height};
+      use(cv.dataset.bg in tex ? cv.dataset.bg : mode);
+    };
+    img.src=BGS[mode];
+  } };
+}
+const BG_BUTTONS = ["dunes","meadow","glass"].map(b=>'<button type="button" data-bg="'+b+'">'+b+'</button>').join("");
+function wireBgSwitch(){
+  document.querySelectorAll(".bg-switch button").forEach(b=>b.onclick=()=>setBg(b.dataset.bg));
+  setBg(get(LS.bg,"dunes"));
+}
+function setBg(mode){
+  if(!BGS[mode]) mode="dunes";
+  $("wind").dataset.bg=mode; localStorage.setItem(LS.bg, mode);
+  if(wind) wind.set(mode);
+  document.querySelectorAll(".bg-switch button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.bg===mode));
+}
+
+/* ---------- landing tree: an ASCII coastal pine whose branches are pull requests ---------- */
+// Tree space is 900×900 with the ground on the bottom edge (the token panel's top rule). The trunk is main;
+// each PR is a branch ending in a tuft of needles. Glyphs, git lines and labels all come from this one model.
+const TREE = {
+  trunk:[[452,892],[449,846],[444,790],[441,732],[444,676],[452,620],[446,562],[434,506],[438,450],[448,396],[440,340],[428,284],[424,232],[430,186]],
+  apex:[430,168,98,56],
+  prs:[ // y: where it leaves the trunk; tuft: [cx, cy, rx, ry]
+    { n:128, ci:"pass",    y:650, tuft:[262,598,116,52] },
+    { n:144, ci:"pass",    y:580, tuft:[632,540,112,50] },
+    { n:151, ci:"running", y:500, tuft:[276,452,104,48] },
+    { n:157, ci:"pass",    y:425, tuft:[612,385,100,46] },
+    { n:166, ci:"fail",    y:350, tuft:[300,305,90,42] },
+    { n:133, ci:"pass",    y:280, tuft:[578,240,86,40] },
+  ],
+};
+function initTree(cv){
+  const ctx=cv.getContext("2d"), css=getComputedStyle(document.documentElement), V=k=>css.getPropertyValue(k).trim();
+  const INK=V("--branch-ink"), TXT=V("--text"), LEAF=V("--leaf"), BARK=V("--bark"), SUN=V("--sun"), PAPER=V("--surface"), LINE=V("--line"), MONO=V("--mono");
+  const CI={ pass:V("--pass"), fail:V("--fail"), running:V("--run") };
+  const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const W=900, H=900, COLS=80, CW=W/COLS;
+  ctx.font=`100px ${MONO}`;
+  const FS=CW/(ctx.measureText("8").width/100), CH=FS*1.08, ROWS=Math.floor(H/CH), OY=H-ROWS*CH;  // rows sit on the ground
+  const hash=(a,b)=>{ const x=Math.sin(a*127.1+b*311.7)*43758.5453; return x-Math.floor(x); };
+  const noise=(x,y)=>{ const i=Math.floor(x), j=Math.floor(y); let u=x-i, v=y-j; u=u*u*(3-2*u); v=v*v*(3-2*v);
+    return (hash(i,j)*(1-u)+hash(i+1,j)*u)*(1-v)+(hash(i,j+1)*(1-u)+hash(i+1,j+1)*u)*v; };
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)), ease=x=>1-Math.pow(1-clamp(x),3);
+
+  // trunk: Catmull-Rom through the control points; slender, flaring a little into the sand
+  const T=TREE.trunk, trunk0=[];
+  for(let i=0;i<T.length-1;i++){
+    const p0=T[Math.max(i-1,0)], p1=T[i], p2=T[i+1], p3=T[Math.min(i+2,T.length-1)];
+    for(let k=0;k<8;k++){ const t=k/8, t2=t*t, t3=t2*t;
+      trunk0.push([0,1].map(d=>.5*(2*p1[d]+(p2[d]-p0[d])*t+(2*p0[d]-5*p1[d]+4*p2[d]-p3[d])*t2+(3*p1[d]-p0[d]-3*p2[d]+p3[d])*t3))); }
+  }
+  trunk0.push(T[T.length-1]);
+  let trunkLen=0; for(let i=1;i<trunk0.length;i++) trunkLen+=Math.hypot(trunk0[i][0]-trunk0[i-1][0], trunk0[i][1]-trunk0[i-1][1]);
+  const trunkW=s=>16+36*Math.pow(1-s,1.3)+42*Math.exp(-s*20);
+
+  // tufts: long, flat-bottomed clumps of needles strung along each branch, like the dune pines
+  const tufts=[];
+  const mkTuft=(cx,cy,rx,ry,seed)=>{
+    const lobes=[[0,0,rx,ry,1],[-.62*rx,.16*ry,.5*rx,.8*ry,.85],[.62*rx,.12*ry,.5*rx,.76*ry,.85],[(hash(seed,1)-.5)*.5*rx,-.55*ry,.46*rx,.66*ry,.75]];
+    for(let k=0;k<3;k++) lobes.push([(hash(seed,k+2)-.5)*1.7*rx,(hash(seed,k+5)-.6)*.9*ry,.26*rx,.5*ry,.7]);
+    tufts.push({ c:[cx,cy], rx, ry, lobes }); return tufts.length-1;
+  };
+  const prs=TREE.prs.map((p,k)=>{
+    const [cx,cy,rx,ry]=p.tuft, left=cx<450;
+    let ti=0; trunk0.forEach((q,i)=>{ if(Math.abs(q[1]-p.y)<Math.abs(trunk0[ti][1]-p.y)) ti=i; });
+    const tuft=mkTuft(cx,cy,rx,ry,k+1);
+    const a=trunk0[ti], sub=k<4 ? mkTuft(a[0]+(cx-a[0])*.5, (a[1]+cy)/2-8, rx*.42, ry*.62, k+11) : -1;  // a smaller clump nearer the trunk
+    return { ...p, left, ti, rx, off:[(left?.18:-.18)*rx, .36*ry], tuft, sub, start:.8+k*.17 };
+  });
+  const apex=mkTuft(...TREE.apex, 9);
+
+  const near=(pts,x,y)=>{ // closest point on a polyline
+    let best=1e9, bi=0, bu=0;
+    for(let i=0;i<pts.length-1;i++){
+      const a=pts[i], b=pts[i+1], ex=b[0]-a[0], ey=b[1]-a[1];
+      const u=clamp(((x-a[0])*ex+(y-a[1])*ey)/(ex*ex+ey*ey||1)), px=a[0]+ex*u-x, py=a[1]+ey*u-y, d=px*px+py*py;
+      if(d<best){ best=d; bi=i; bu=u; }
+    }
+    const a=pts[bi], b=pts[bi+1], ex=b[0]-a[0], ey=b[1]-a[1], l=Math.hypot(ex,ey)||1;
+    return { d:Math.sqrt(best), s:(bi+bu)/(pts.length-1), tx:ex/l, ty:ey/l, cx:a[0]+ex*bu, cy:a[1]+ey*bu };
+  };
+  const bbox=(pts,m)=>{ const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]); return [Math.min(...xs)-m, Math.min(...ys)-m, Math.max(...xs)+m, Math.max(...ys)+m]; };
+  const inBox=(b,x,y)=>x>b[0]&&x<b[2]&&y>b[1]&&y<b[3];
+  const stroke=(tx,ty)=>{ // the glyph that best draws a line heading this way, in cell space
+    const d=((Math.atan2(-ty/CH, tx/CW)*180/Math.PI)+180)%180;
+    return d<22.5||d>=157.5 ? "-" : d<67.5 ? "/" : d<112.5 ? "|" : "\\";
+  };
+
+  let t0=performance.now(), raf=0, last=0;
+  function draw(now){
+    const t=still?99:(now-t0)/1000, amp=still?0:clamp((t-2.6)/3);   // grow first, then settle into the breeze
+    const R=(a,d)=>ease((t-a)/d);
+    const sway=(x,y)=>amp*Math.pow(clamp((892-y)/720),1.6)*(4*Math.sin(t*.9)+2*Math.sin(t*1.7+1.1)+Math.sin(t*2.9+.4));
+    const mv=p=>{ const dx=sway(p[0],p[1]); return [p[0]+dx, p[1]-Math.abs(dx)*.06]; };
+    const trunk=trunk0.map(mv), tb=bbox(trunk,50), tr=R(.1,1.3), base=trunk[0];
+    const tC=tufts.map((td,i)=>{ const c=mv(td.c); return [c[0]+amp*1.1*Math.sin(t*2.1+i*1.7), c[1]+amp*.7*Math.sin(t*1.6+i)]; });
+    const bloomOf=tufts.map((_,i)=>i===apex ? R(1.05,1) : 0);
+    const br=prs.map(p=>{
+      const a=trunk[p.ti], c=tC[p.tuft], nd=[c[0]+p.off[0], c[1]+p.off[1]], m=[a[0]+(nd[0]-a[0])*.45, a[1]+(nd[1]-a[1])*.1+12], pts=[];
+      for(let i=0;i<=20;i++){ const u=i/20; pts.push([0,1].map(d=>(1-u)*(1-u)*a[d]+2*(1-u)*u*m[d]+u*u*nd[d])); }
+      bloomOf[p.tuft]=R(p.start+.45,.9); if(p.sub>=0) bloomOf[p.sub]=R(p.start+.3,.9);
+      return { p, pts, nd, rv:R(p.start,.7), box:bbox(pts,24), lab:R(p.start+1,.5) };
+    });
+    // labels are tags that never shrink below ~11.5px on screen, however small the tree gets
+    const LF=Math.max(19, 11.5*W/(cv.clientWidth||W)), PAD=LF*.45;
+    ctx.font=`600 ${LF}px ${MONO}`;
+    const labels=br.map(b=>{ const s="#"+b.p.n, w=ctx.measureText(s).width, x=b.p.left ? b.nd[0]-b.p.rx*1.18-14-w : b.nd[0]+b.p.rx*1.18+14;
+      return { s, x:clamp(x, PAD+2, W-w-PAD-2), y:b.nd[1], w, a:b.lab }; });
+    const mainW=ctx.measureText("main").width;
+    labels.push({ s:"main", x:base[0]-36-mainW, y:H-LF*.95, w:mainW, a:R(0,.5) });
+
+    const dens=(x,y)=>{
+      let f=0, best=0, bi=-1;
+      for(let i=0;i<tufts.length;i++){
+        const c=tC[i]; if(Math.abs(x-c[0])>tufts[i].rx*1.4||Math.abs(y-c[1])>tufts[i].ry*1.5) continue;
+        let fi=0;
+        for(const [dx,dy,rx,ry,w] of tufts[i].lobes){ const X=(x-c[0]-dx)/rx, yr=y-c[1]-dy, Y=yr/(yr>0?ry*.55:ry), q=X*X+Y*Y; if(q<1) fi+=w*Math.pow(1-q,1.4); }
+        if(fi>best){ best=fi; bi=i; } f+=fi;
+      }
+      return bi<0 ? [0,-1] : [f*(.6+.8*noise((x-tC[bi][0])*.04+bi*7, (y-tC[bi][1])*.07)), bi];
+    };
+
+    const buckets=new Map(), put=(ch,x,y,al,col=TXT)=>{ const k=col+"|"+Math.round(clamp(al)*24); if(!buckets.has(k)) buckets.set(k,[]); buckets.get(k).push(ch,x,y); };
+    for(let j=0;j<ROWS;j++) for(let i=0;i<COLS;i++){
+      const x=(i+.5)*CW, y=OY+(j+.5)*CH, r=hash(i,j);
+      // keep clear around nodes, labels and the git lines so they read cleanly
+      if(Math.hypot(x-base[0], y-base[1])<16||tr>.99&&Math.hypot(x-trunk[trunk.length-1][0], (y-trunk[trunk.length-1][1])*.8)<13) continue;
+      if(br.some(b=>b.rv>.98&&Math.hypot(x-b.nd[0],(y-b.nd[1])*.8)<15)) continue;
+      if(labels.some(l=>l.a>0&&x>l.x-PAD-4&&x<l.x+l.w+PAD+4&&Math.abs(y-l.y)<LF*.8+CH*.4)) continue;
+      const nt=inBox(tb,x,y)?near(trunk,x,y):null;
+      if(nt&&nt.s<=tr&&nt.d<CW*.42&&nt.s<.97) continue;
+      if(br.some(b=>b.rv>0&&inBox(b.box,x,y)&&(n=>n.s<=b.rv&&n.d<CW*.55)(near(b.pts,x,y)))) continue;
+      // needles: little peaks on top, drooping tips below, dense M/W inside; sunset catches the right edges
+      const [f,pi]=dens(x,y);
+      if(f>.12&&pi>=0){
+        const bloom=bloomOf[pi], r2=hash(i+31,j+17);
+        if(r2<bloom*1.2){
+          const g=(dx,dy)=>dens(x+dx,y+dy)[0], gx=g(CW*.5,0)-g(-CW*.5,0), gy=g(0,CH*.5)-g(0,-CH*.5), gl=Math.hypot(gx,gy)||1, L=gx/gl, D=gy/gl;
+          let ch="";
+          if(r2>=bloom) ch=f>.2?"'":"";                                          // budding
+          else if(f>.56) ch=r<.46?"M":r<.92?"W":"N";
+          else if(f>.34) ch=D>.45 ? (L>.35?"/":L<-.35?"\\":r<.5?"w":"m") : D<-.45 ? (L>.35?"`":L<-.35?"'":r<.5?"V":"v") : (L>0?"M":"W");
+          else if(f>.2) ch=D>.4 ? (r<.6?"^":",") : D<-.4 ? (r<.5?"'":"`") : (L>0?"<":">");
+          else if(r>.8) ch=r>.93?",":"'";                                        // stray needles
+          if(ch){
+            const pc=tC[pi], td=tufts[pi], rel=clamp(((y-pc[1])/td.ry)*.5+.5)*.65+clamp(((pc[0]-x)/td.rx)*.5+.5)*.35;  // sun from the right
+            const lit=f<=.56&&D>.15&&x>pc[0]+td.rx*.15;
+            put(ch,x,y,(.42+.32*rel+(f>.56?.05:0))*(f>.2?1:.8)+(lit?.1:0), lit?SUN:LEAF); continue;
+          }
+        }
+        if(f>.3) continue;
+      }
+      if(nt&&nt.s<=tr){
+        const hw=trunkW(nt.s)/2;
+        if(nt.d<hw){
+          if(nt.d>hw-CW*1.1){ // bark edge, bending with the root flare
+            const k=(trunkW(Math.min(nt.s+.01,1))-trunkW(nt.s))/(.02*trunkLen), ox=(x-nt.cx)/nt.d, oy=(y-nt.cy)/nt.d;
+            put(r<.1&&nt.s>.15 ? (ox<0?"(":")") : stroke(nt.tx+ox*k, nt.ty+oy*k), x, y, ox<0?.78:.86, ox<0?BARK:SUN);
+          } else put(r<.55 ? stroke(nt.tx,nt.ty) : r<.75 ? ":" : r<.9 ? "'" : "(", x, y, .52+.16*r, BARK);
+          continue;
+        }
+      }
+      if(j>=ROWS-2&&Math.abs(x-base[0])<190-r*80&&r<.62) put(j===ROWS-1 ? ",'\\|/\"wv"[Math.floor(r*80)%8] : r<.3?",":"'", x, y, (.34+.2*r)*R(0,.6), LEAF); // dune grass at its feet
+    }
+
+    const dpr=Math.min(devicePixelRatio,2), cw=Math.round(cv.clientWidth*dpr), chh=Math.round(cv.clientHeight*dpr);
+    if(cv.width!==cw||cv.height!==chh){ cv.width=cw; cv.height=chh; }
+    ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.font=`${FS}px ${MONO}`; ctx.textAlign="center"; ctx.textBaseline="middle";
+    for(const [k,list] of buckets){ const [col,a]=k.split("|"); ctx.fillStyle=col; ctx.globalAlpha=a/24; for(let n=0;n<list.length;n+=3) ctx.fillText(list[n],list[n+1],list[n+2]); }
+
+    // git graph: main up the trunk, one line per PR, a node coloured by its CI
+    const px=W/cv.clientWidth;
+    ctx.globalAlpha=.92; ctx.strokeStyle=INK; ctx.lineCap="round"; ctx.lineJoin="round";
+    const line=(pts,frac,lw)=>{ const n=Math.round((pts.length-1)*frac); if(n<1) return; ctx.lineWidth=lw*px; ctx.beginPath(); ctx.moveTo(...pts[0]); for(let i=1;i<=n;i++) ctx.lineTo(...pts[i]); ctx.stroke(); };
+    line(trunk, tr, 2.2);
+    br.forEach(b=>line(b.pts, b.rv, 1.9));
+    const node=(p,fill,a,rad=4.4)=>{ if(a<=0) return; ctx.globalAlpha=a; ctx.beginPath(); ctx.arc(p[0],p[1],rad*px*(.6+.4*a),0,7); ctx.fillStyle=fill; ctx.fill(); ctx.lineWidth=1.5*px; ctx.stroke(); };
+    node(base, INK, R(0,.4), 3.6);
+    if(tr>.99) node(trunk[trunk.length-1], INK, R(1.3,.4), 3);
+    br.forEach(b=>{
+      const a=ease((b.rv-.9)*10);
+      if(b.p.ci==="running"&&a>0&&!still){ const ph=(t*.7)%1; ctx.globalAlpha=a*(1-ph)*.6; ctx.beginPath(); ctx.arc(b.nd[0],b.nd[1],(4.4+ph*9)*px,0,7); ctx.lineWidth=1.2*px; ctx.strokeStyle=CI.running; ctx.stroke(); ctx.strokeStyle=INK; }
+      node(b.nd, CI[b.p.ci], a);
+    });
+    ctx.font=`600 ${LF}px ${MONO}`; ctx.textAlign="left";
+    labels.forEach(l=>{ if(l.a<=0) return;
+      ctx.globalAlpha=l.a*.9; ctx.beginPath(); ctx.roundRect(l.x-PAD, l.y-LF*.78, l.w+PAD*2, LF*1.56, LF*.3);
+      ctx.fillStyle=PAPER; ctx.fill(); ctx.lineWidth=px; ctx.strokeStyle=LINE; ctx.stroke();
+      ctx.globalAlpha=l.a; ctx.fillStyle=INK; ctx.fillText(l.s, l.x, l.y+LF*.04); });
+    ctx.globalAlpha=1;
+  }
+  if(still){ draw(0); return; }
+  const loop=now=>{ if(!cv.isConnected) return; raf=requestAnimationFrame(loop); if(now-last<(now-t0<4000?33:50)) return; last=now; draw(now); }; // 30fps growing, 20fps swaying
+  new IntersectionObserver(([e])=>{ cancelAnimationFrame(raf); raf=e.isIntersecting&&cv.isConnected?requestAnimationFrame(loop):0; }).observe(cv);
+}
+
+applyTheme(); initWind(); setBg(get(LS.bg,"dunes"));
 oauthFinish().then(handled=>{ if(handled) return; if(get(LS.token,"")) connectAndLoad(); else showLanding(); });
 </script>
 </body>
