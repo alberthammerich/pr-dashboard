@@ -2,9 +2,10 @@ const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
 const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg", db:"prdash_db" };
 const HOURS_DEFAULT = 48;
-// "Sign in with GitHub": empty clientId hides the button. Only works on the origin the OAuth App's callback is registered for,
+// "Sign in with GitHub": empty clientId hides the button. Only works on the origin the GitHub App's callback is registered for,
 // so self-deployed copies fall back to pasting a token.
-const OAUTH = { clientId:"Ov23liqusWyO1KYoKEr9", exchange:"https://pr-dashboard-auth.albertbrovsing.workers.dev/", home:"https://alberthammerich.github.io/pr-dashboard/" };
+// It's a GitHub App with read-only Pull requests, Checks, Commit statuses and Metadata, so a sign-in token can't change anything.
+const OAUTH = { clientId:"Iv23lieiHL3dDOqEcXWB", app:"pr-dashboard-by-alberthammerich", exchange:"https://pr-dashboard-auth.albertbrovsing.workers.dev/", home:"https://alberthammerich.github.io/pr-dashboard/" };
 const oauthReady = () => !!(OAUTH.clientId && OAUTH.exchange && location.href.startsWith(OAUTH.home));
 const WAITLIST_URL = REPO_URL+"/issues/2", SPONSOR_URL = "https://github.com/sponsors/alberthammerich";
 
@@ -233,7 +234,7 @@ function showLanding(errMsg){
 /* ---------- Sign in with GitHub (OAuth web flow) ---------- */
 function oauthStart(){
   const state=crypto.randomUUID(); sessionStorage.setItem("prdash_oauth_state", state);
-  location.href="https://github.com/login/oauth/authorize?"+new URLSearchParams({ client_id:OAUTH.clientId, scope:"repo", state, redirect_uri:OAUTH.home });
+  location.href="https://github.com/login/oauth/authorize?"+new URLSearchParams({ client_id:OAUTH.clientId, state, redirect_uri:OAUTH.home });
 }
 // GitHub redirects back with ?code&state. Returns true when it handled a callback.
 async function oauthFinish(){
@@ -260,7 +261,7 @@ function showSettings(){
     +'<span class="lbl" style="margin-top:20px">Closed PR window / hours</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
     +'<div class="row" style="margin-top:24px"><button class="btn primary" id="sSave">Save and reload</button>'
     +'<button class="btn" id="sOut">Sign out</button></div>'
-    +(get(LS.refresh,"")?'<div class="help" style="margin-top:16px">Missing PRs from an organization? <a href="https://github.com/settings/connections/applications/'+OAUTH.clientId+'" target="_blank" rel="noopener">Choose which organizations PR Dashboard can see ↗</a></div>':'')
+    +(get(LS.refresh,"")?'<div class="help" style="margin-top:16px">Missing PRs from an organization? <a href="https://github.com/apps/'+OAUTH.app+'/installations/new" target="_blank" rel="noopener">Install PR Dashboard there ↗</a> An org owner may need to approve it.</div>':'')
     +'</div>';
   $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); localStorage.removeItem(LS.db); DB=null; load(); };
   $("sOut").onclick=signOut;

@@ -53,8 +53,9 @@ No GitHub CLI, or on a self-hosted copy?
   It is never embedded in the page, the repo, or anywhere else.
 - **Read it yourself.** The entire app is [`index.html`](./index.html) plus its script, [`app.js`](./app.js). There are no
   dependencies, no bundler, no hidden requests, and no analytics.
-- **Read-only in practice.** The dashboard only reads your PRs and check statuses. (GitHub's `repo`
-  scope can't be narrowed to read-only for OAuth apps; paste a fine-grained read-only token if you want that.)
+- **Read-only sign-in.** "Sign in with GitHub" uses a GitHub App that can only read pull requests,
+  checks and commit statuses, so its token can't change anything. A pasted token has whatever access you
+  give it; a fine-grained, read-only token is the safest choice.
 - **Revoke anytime** at [github.com/settings/tokens](https://github.com/settings/tokens), or click
   **Sign out** in the app to wipe it from your browser.
 
@@ -76,20 +77,21 @@ origin) and never again.
 
 ## How it works
 
-On connect, the page calls `GET /user` to learn who you are, then uses the GitHub Search API
-(`/search/issues`) to find your open and recently-closed PRs. For each PR it reads the head commit's
-**check-runs** and **combined status** to compute a CI rollup. Everything is rendered client-side.
-The GitHub **GraphQL** API isn't usable here because it doesn't send CORS headers to browsers, so
-this uses the REST API throughout.
+On connect, the page calls `GET /user` to learn who you are, then makes two GraphQL searches, one for
+your open PRs and one for recently-closed ones. Each returns every PR with its head commit's checks and
+statuses, which become the CI rollup. Everything is rendered client-side, and the last result is kept
+in `localStorage` so the next visit shows it instantly while it refreshes.
 
 ## Running the sign-in relay
 
 One-time setup for the maintainer's hosted copy (`worker/`, Cloudflare Workers free tier):
 
-1. Create a GitHub OAuth App: Homepage and Callback URL = `https://alberthammerich.github.io/pr-dashboard/`.
+1. Create a GitHub App: Homepage and Callback URL = `https://alberthammerich.github.io/pr-dashboard/`,
+   webhook off, and read-only access to Pull requests, Checks, Commit statuses and Metadata.
+   Install it on every account or organization whose PRs should show up.
 2. Put its Client ID in `worker/wrangler.toml` (`CLIENT_ID`), then from `worker/`:
    `npx wrangler secret put CLIENT_SECRET` and `npx wrangler deploy`.
-3. Set `OAUTH.clientId` and `OAUTH.exchange` (the printed `*.workers.dev` URL) in `app.js`.
+3. Set `OAUTH.clientId`, `OAUTH.app` (the app's URL name) and `OAUTH.exchange` (the printed `*.workers.dev` URL) in `app.js`.
 
 Until those are set, the button stays hidden and the page works with pasted tokens.
 

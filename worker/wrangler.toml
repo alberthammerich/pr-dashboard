@@ -8,4 +8,4 @@ enabled = false
 
 [vars]
 ALLOWED_ORIGIN = "https://alberthammerich.github.io"
-CLIENT_ID = "Ov23liqusWyO1KYoKEr9" # public. CLIENT_SECRET: `npx wrangler secret put CLIENT_SECRET`
+CLIENT_ID = "Iv23lieiHL3dDOqEcXWB" # GitHub App, public. CLIENT_SECRET: `npx wrangler secret put CLIENT_SECRET`
