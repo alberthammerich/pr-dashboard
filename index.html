@@ -667,6 +667,24 @@
   @media (prefers-reduced-motion:reduce) {
     .rise { animation:none !important; }
   }
+  /* loading: a riso "shadow study" of pine shade, cut into stamps (WebGL in shadowStudy); the conic is the no-WebGL fallback */
+  #study {
+    position:fixed; inset:0; z-index:100;
+    background:conic-gradient(at 70% 49%, #1f4a2a 0 25%, #e5c4e3 0 50%, #1f4a2a 0 75%, #4a50d8 0);
+    transition:opacity .5s;
+  }
+  #study.gl { background:none; }
+  #study.out { pointer-events:none; }
+  #study.gone { opacity:0; }
+  #study canvas { position:absolute; inset:0; width:100%; height:100%; }
+  #study p {
+    position:absolute; right:calc(30% + 2.4vmin); top:calc(49% + 2.4vmin); margin:0;
+    color:#d4dd4a; text-align:right; text-shadow:0 0 1px #d4dd4a;  /* ink bleed */
+    font:500 clamp(15px,2.3vmin,24px)/1.12 "Helvetica Neue",Helvetica,Arial,sans-serif; letter-spacing:-.015em;
+  }
+  #study p span { display:block; }
+  #study p .wait::after { content:"..."; display:inline-block; width:1em; text-align:left; animation:dots 1.4s steps(4,jump-none) infinite; }
+  @keyframes dots { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
 </style>
 </head>
 <body>
@@ -704,7 +722,7 @@
 <script>
 const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
-const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg" };
+const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg", db:"prdash_db" };
 const HOURS_DEFAULT = 48;
 // "Sign in with GitHub": empty clientId hides the button. Only works on the origin the OAuth App's callback is registered for,
 // so self-deployed copies fall back to pasting a token.
@@ -743,20 +761,15 @@ async function oauthExchange(body){
   if(j.refresh_token){ localStorage.setItem(LS.refresh, j.refresh_token); localStorage.setItem(LS.exp, String(Date.now()+j.expires_in*1000)); }
   else { localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); }
 }
-async function api(path){
+async function api(path, body){
   const token = await freshToken();
-  return fetch("https://api.github.com"+path, { headers:{ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, cache:"no-store" })
+  return fetch("https://api.github.com"+path, { method:body?"POST":"GET", body:body?JSON.stringify(body):undefined, headers:{ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, cache:"no-store" })
   .then(async r=>{
     if(r.status===401) throw new Error("GitHub didn’t accept that token (401). Sign in again.");
     if(r.status===403){ const b=await r.text(); throw new Error("GitHub said no (403). "+(b.includes("rate")?"You’ve hit the rate limit. Give it a minute.":"Your token may be missing the repo scope.")); }
     if(!r.ok) throw new Error("GitHub returned "+r.status+".");
     return r.json();
   });
-}
-async function pool(items, n, fn){
-  const out=new Array(items.length); let i=0;
-  await Promise.all(Array.from({length:Math.min(n,items.length)||1}, async()=>{ while(i<items.length){ const idx=i++; try{ out[idx]=await fn(items[idx],idx); }catch(e){ out[idx]={__err:String(e.message||e)}; } } }));
-  return out;
 }
 function normChecks(runs, statuses){
   const out=[];
@@ -776,40 +789,38 @@ function normChecks(runs, statuses){
 function rollup(checks){ if(!checks.length) return "none";
   if(checks.some(c=>c.status==="fail")) return "fail"; if(checks.some(c=>c.status==="running")) return "running";
   if(checks.some(c=>c.status==="pass")) return "pass"; return "none"; }
-async function enrich(item){
-  const repo = item.repository_url.replace("https://api.github.com/repos/","");
-  const merged = !!(item.pull_request && item.pull_request.merged_at);
-  let state = item.state==="open" ? "OPEN" : (merged ? "MERGED" : "CLOSED");
-  let branch="", sha="", additions=null, deletions=null, comments=null, draft=!!item.draft, review="";
-  try {
-    const pr = await api("/repos/"+repo+"/pulls/"+item.number);
-    sha=pr.head&&pr.head.sha; branch=(pr.head&&pr.head.ref)||""; draft=!!pr.draft;
-    additions=pr.additions; deletions=pr.deletions; comments=pr.comments;
-    if((pr.requested_reviewers&&pr.requested_reviewers.length)||(pr.requested_teams&&pr.requested_teams.length)) review="REVIEW_REQUIRED";
-  } catch(e){}
-  let checks=[];
-  if(sha){
-    const [cr, st] = await Promise.all([
-      api("/repos/"+repo+"/commits/"+sha+"/check-runs?per_page=100").then(r=>r.check_runs).catch(()=>[]),
-      api("/repos/"+repo+"/commits/"+sha+"/status").then(r=>r.statuses).catch(()=>[]),
-    ]);
-    checks = normChecks(cr, st);
-  }
-  return { number:item.number, title:item.title, url:item.html_url, repo, state, isDraft:draft, reviewDecision:review, branch, additions, deletions, comments, createdAt:item.created_at, updatedAt:item.updated_at, closedAt:item.closed_at||null, ci:rollup(checks), checks };
+// One GraphQL search returns each PR with its CI, instead of 3 REST calls per PR.
+const PR_QUERY=`query($q:String!){ search(query:$q, type:ISSUE, first:100){ nodes{ ... on PullRequest{
+  number title url state isDraft additions deletions createdAt updatedAt closedAt headRefName
+  repository{nameWithOwner} comments{totalCount} reviewRequests{totalCount}
+  commits(last:1){ nodes{ commit{ statusCheckRollup{ contexts(first:100){ nodes{ __typename
+    ... on CheckRun{ name status conclusion detailsUrl checkSuite{ app{ name } } }
+    ... on StatusContext{ context state targetUrl } } } } } } } } } } }`;
+async function searchPRs(q){
+  const j=await api("/graphql", {query:PR_QUERY, variables:{q}});
+  if(j.errors) throw new Error("GitHub returned an error: "+j.errors.map(e=>e.message).join("; "));
+  return j.data.search.nodes;
+}
+function toPR(n){
+  const c=n.commits.nodes[0], ctx=(c&&c.commit.statusCheckRollup&&c.commit.statusCheckRollup.contexts.nodes)||[];
+  const checks=normChecks(
+    ctx.filter(x=>x.__typename==="CheckRun").map(x=>({ name:x.name, status:x.status, conclusion:x.conclusion, details_url:x.detailsUrl, app:x.checkSuite&&x.checkSuite.app })),
+    ctx.filter(x=>x.__typename==="StatusContext").map(x=>({ context:x.context, state:x.state, target_url:x.targetUrl })));
+  return { number:n.number, title:n.title, url:n.url, repo:n.repository.nameWithOwner, state:n.state, isDraft:n.isDraft,
+    reviewDecision:n.reviewRequests.totalCount?"REVIEW_REQUIRED":"", branch:n.headRefName, additions:n.additions, deletions:n.deletions,
+    comments:n.comments.totalCount, createdAt:n.createdAt, updatedAt:n.updatedAt, closedAt:n.closedAt, ci:rollup(checks), checks };
 }
 async function collect(){
   const author = get(LS.author, "") || (ME && ME.login);
   const hours = Number(get(LS.hours, HOURS_DEFAULT));
   const cutoff = Date.now() - hours*3600*1000;
   const sinceDay = new Date(cutoff).toISOString().slice(0,10);
-  const q = s => "/search/issues?per_page=60&sort=updated&order=desc&q=" + encodeURIComponent(s);
   const [open, closed] = await Promise.all([
-    api(q(`author:${author} type:pr state:open`)).then(r=>r.items),
-    api(q(`author:${author} type:pr state:closed closed:>=${sinceDay}`)).then(r=>r.items),
+    searchPRs(`author:${author} type:pr state:open sort:updated-desc`),
+    searchPRs(`author:${author} type:pr state:closed closed:>=${sinceDay} sort:updated-desc`),
   ]);
-  const recentClosed = closed.filter(p=>p.closed_at && new Date(p.closed_at).getTime()>=cutoff);
-  const prs = await pool([...open, ...recentClosed], 6, enrich);
-  return { prs, generatedAt:new Date().toISOString(), author, hours };
+  const recentClosed = closed.filter(p=>p.closedAt && new Date(p.closedAt).getTime()>=cutoff);
+  return { prs:[...open, ...recentClosed].map(toPR), generatedAt:new Date().toISOString(), author, hours };
 }
 
 /* ---------- render dashboard ---------- */
@@ -954,10 +965,10 @@ async function oauthFinish(){
   const expected=sessionStorage.getItem("prdash_oauth_state"); sessionStorage.removeItem("prdash_oauth_state");
   if(p.get("error")){ showLanding("GitHub sign-in was cancelled."); return true; }
   if(!expected||state!==expected){ showLanding("Sign-in check failed. Please try again."); return true; }
-  $("main").innerHTML='<div class="empty"><span class="spin">↻</span> Signing you in…</div>';
+  studyShow("Signing you in");
   try{
     await oauthExchange({code}); connectAndLoad();
-  }catch(e){ showLanding(String(e.message||e)); }
+  }catch(e){ studyHide(); showLanding(String(e.message||e)); }
   return true;
 }
 
@@ -973,13 +984,13 @@ function showSettings(){
     +'<button class="btn" id="sOut">Sign out</button></div>'
     +(get(LS.refresh,"")?'<div class="help" style="margin-top:16px">Missing PRs from an organization? <a href="https://github.com/settings/connections/applications/'+OAUTH.clientId+'" target="_blank" rel="noopener">Choose which organizations PR Dashboard can see ↗</a></div>':'')
     +'</div>';
-  $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); DB=null; load(); };
+  $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); localStorage.removeItem(LS.db); DB=null; load(); };
   $("sOut").onclick=signOut;
   $("sBack").onclick=()=>DB?render():load();
   wireBgSwitch();
 }
 function signOut(){
-  localStorage.removeItem(LS.token); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); localStorage.removeItem(LS.author); localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me);
+  localStorage.removeItem(LS.token); localStorage.removeItem(LS.refresh); localStorage.removeItem(LS.exp); localStorage.removeItem(LS.author); localStorage.removeItem(LS.hours); localStorage.removeItem(LS.me); localStorage.removeItem(LS.db);
   DB=null; ME=null; if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } $("auto").checked=false;
   applyTheme(); showLanding();
 }
@@ -994,20 +1005,22 @@ function applyIdentity(me){
   $("srcLink").classList.add("hide"); $("controls").classList.remove("hide");
 }
 async function connectAndLoad(){
-  $("main").innerHTML='<div class="empty"><span class="spin">↻</span> Reading your account…</div>';
+  studyShow("Reading your account");
   try{
     const me=await api("/user");
     localStorage.setItem(LS.me, JSON.stringify({login:me.login, avatar_url:me.avatar_url, name:me.name}));
     applyIdentity(me); await load();
-  }catch(e){ localStorage.removeItem(LS.token); showLanding(String(e.message||e)); }
+  }catch(e){ localStorage.removeItem(LS.token); studyHide(); showLanding(String(e.message||e)); }
 }
 async function load(){
   if(!get(LS.token,"")){ showLanding(); return; }
   if(!ME){ const cached=get(LS.me,""); if(cached){ try{ applyIdentity(JSON.parse(cached)); }catch(e){} } }
   const btn=$("refresh"); btn.disabled=true; btn.innerHTML='<span class="spin">↻</span> Refreshing…';
-  if(!DB){ $("main").innerHTML='<div class="empty"><span class="spin">↻</span> Rounding up your pull requests…</div>'; }
-  try{ DB=await collect(); render(); }
+  // Paint the last result instantly; GitHub search takes seconds.
+  if(!DB){ try{ DB=JSON.parse(get(LS.db,"")); render(); }catch(e){ $("main").innerHTML=""; studyShow("Rounding up your pull requests"); } }
+  try{ DB=await collect(); render(); studyHide(DB.prs.length); try{ localStorage.setItem(LS.db, JSON.stringify(DB)); }catch(e){} }
   catch(e){
+    studyHide();
     $("main").innerHTML='<div class="connect settings-panel"><span class="kicker">Couldn’t load</span><p class="err">'+esc(String(e.message||e))+'</p><div class="row" style="margin-top:6px"><button class="btn primary" id="retry">Try again</button><button class="btn" id="fix">Open settings</button></div></div>';
     const r=$("retry"), f=$("fix"); if(r) r.onclick=load; if(f) f.onclick=showSettings;
   }
@@ -1129,20 +1142,188 @@ void main(){
   vec2 s=vec2(gl_FragCoord.x, R.y-gl_FragCoord.y);
   gl_FragColor=vec4(M>1.5 ? dunes(s) : M>.5 ? glass(s) : meadow(s), 1);
 }`;
+// Compiles a fragment shader over one full-screen triangle; null if the GPU refuses.
+function fullscreenProgram(gl, fs){
+  const pg=gl.createProgram();
+  [[gl.VERTEX_SHADER,"attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}"],[gl.FRAGMENT_SHADER,fs]].forEach(([type,src])=>{
+    const sh=gl.createShader(type); gl.shaderSource(sh,src); gl.compileShader(sh); gl.attachShader(pg,sh); });
+  gl.bindAttribLocation(pg,0,"p"); gl.linkProgram(pg);
+  if(!gl.getProgramParameter(pg,gl.LINK_STATUS)) return null;
+  gl.useProgram(pg);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  return pg;
+}
+
+/* ---------- loading: shadow study ---------- */
+// Four riso stamps cut from one sheet. The landing's pine (TREE) grows across all of them while we wait, and each
+// stamp prints it differently: riso shade, halftone, numbered grid, circle packing, dither. Every beat the styles
+// move on a stamp, like flipping through studies. When the PRs arrive the stamps tear apart along their perforations.
+// C is where the perforations cross; the caption hangs below-left of it; u is one "unit" (perforation size);
+// x runs 0→1 as the stamps part; g is how grown the pine is. TP/TF/BS are the pine in screen px (see studyPine).
+const STUDY_FS = `precision highp float;
+uniform vec2 R, C, K; uniform float t, u, x, feed, g, beat;   // K: caption size, px
+uniform vec3 TP[14]; uniform vec4 TF[11], BS[6]; uniform float TOP;  // trunk (x,y,half width), tufts (c,r), branches (a,b)
+float h(vec2 p){ vec3 q=fract(p.xyx*.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }  // sin-free: no moiré
+float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+1.),f.x), f.y); }
+float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<5;i++){ s+=a*n(p); p=p*2.03+17.; a*=.5; } return s; }
+float seg(vec2 p, vec2 a, vec2 b, out float k){ vec2 pa=p-a, ba=b-a; k=clamp(dot(pa,ba)/dot(ba,ba),0.,1.); return length(pa-ba*k); }
+// one edge's perforation: a black band of half-width g whose round teeth bite into the stamp every 2.4u,
+// punched outward from the cross as time goes on
+float edge(float across, float along, float shown){
+  float k=clamp((shown-along)/(2.*u),0.,1.), w=1.1*u*k, r=.85*u*k;
+  float yy=mod(along-feed*u, 2.4*u)-1.2*u;                // feed: the teeth crawl outward like sprockets while we wait
+  return min(across-w, length(vec2(across-w, yy))-r);
+}
+// the pine's brightness at q (0 = none): grows from the ground up and sways more toward the top
+float pine(vec2 q){
+  float H=R.y-TOP, front=R.y-g*H*1.08, hy=clamp((R.y-q.y)/H,0.,1.);
+  q.x-=(.6*sin(t*.9)+.4*sin(t*1.7+1.))*.014*H*hy*hy;
+  float d=0., k;
+  if(q.y>front) for(int i=0;i<13;i++){
+    float dd=seg(q,TP[i].xy,TP[i+1].xy,k), w=mix(TP[i].z,TP[i+1].z,k);
+    d=max(d, smoothstep(w+1.,w-1.,dd)*(.38+.22*n(vec2(q.x*.12,q.y*.02))));      // bark streaks run up the trunk
+  }
+  for(int i=0;i<6;i++){
+    float grow=clamp((BS[i].w-front)/(H*.1),0.,1.), dd=seg(q,BS[i].xy,BS[i].zw,k);
+    if(k<grow) d=max(d, smoothstep(.4*u,.2*u,dd)*.42);
+  }
+  float nf=fbm(q/(1.4*u));
+  for(int i=0;i<11;i++){
+    float grow=clamp((TF[i].y+TF[i].w-front)/(H*.12),0.,1.); grow=grow*grow*(3.-2.*grow);
+    vec2 r=TF[i].zw*grow+.001, v=q-TF[i].xy;
+    if(grow<=0.||abs(v.x)>r.x*1.4||abs(v.y)>r.y*1.8) continue;
+    if(v.y>0.) v.y*=1.7;                                    // flat-bottomed, like the dune pines
+    float e=min(min(length(v/r), length((v-vec2(-.62,.16)*r)/(r*vec2(.5,.8)))),
+                min(length((v-vec2(.62,.12)*r)/(r*vec2(.5,.76))), length((v-vec2(0,-.55)*r)/(r*vec2(.46,.66)))));
+    e+=(nf-.5)*.55;                                         // needles fray the edge
+    d=max(d, smoothstep(1.,.86,e)*(.45+.35*nf+.3*clamp(-v.y/r.y,0.,1.)));  // lit from above
+  }
+  return clamp(d,0.,1.);
+}
+float glyph(float d){ return d<.5?31599.:d<1.5?11415.:d<2.5?29671.:d<3.5?29647.:d<4.5?23497.:d<5.5?31183.:d<6.5?31215.:d<7.5?29330.:d<8.5?31727.:31695.; }
+float bayer(vec2 a){ a=floor(a); float b2=fract(dot(a,vec2(.5,a.y*.75))); a=floor(a*.5); return fract(dot(a,vec2(.5,a.y*.75)))*.25+b2; }
+void main(){
+  vec2 s=vec2(gl_FragCoord.x, R.y-gl_FragCoord.y);
+  vec2 q=sign(s-C+.001);                                   // which stamp: (-1,-1) top-left … (1,1) bottom-right
+  float id=(q.x+1.)*.5+(q.y+1.);                           // 0 TL, 1 TR, 2 BL, 3 BR
+  float e=clamp((x-id*.07)/.79,0.,1.);                     // stamps leave one after another
+  vec2 p=s-q*e*e*length(R)*.75;                            // where this pixel sits on its (moving) stamp
+  float shown=t*length(R)*.9;                              // perforating runs out from the cross
+  vec2 a=(p-C)*q;                                          // distance from the cross, into the stamp
+  float d=min(edge(a.x,a.y,shown), edge(a.y,a.x,shown));   // >0 inside the stamp, in px
+  vec3 dark=vec3(.12,.29,.16), light=vec3(.83,.87,.29);    // forest on chartreuse
+  if(id<.5||id>2.5){ dark=vec3(.29,.31,.85); light=vec3(.90,.77,.89); }  // ultramarine on blush
+  vec3 bg=dark, ink=light;
+  if(id>2.5){ bg=light; ink=dark; }                        // bottom-right is printed in negative
+  float cap=id>1.5&&id<2.5 ? 1.-smoothstep(.55,1.3,length((C-p)/(K*vec2(1.3,3.)+6.*u))) : 0.;  // the caption sits in shade
+  float style=mod(id+beat,5.), lit;
+  if(style<.5){                                            // riso: dappled shade with the pine's shadow in it
+    vec4 crop = id<.5 ? vec4(1.3,.0,.52,.07) : id<1.5 ? vec4(3.2,7.,.53,.035) : id<2.5 ? vec4(2.4,3.,.5,.045) : vec4(1.7,11.,.36,.05);
+    vec2 w=p/min(R.x,R.y)*crop.x+crop.y;
+    float sway=.06*sin(t*.9+w.y*1.7)+.03*sin(t*1.7+w.x*3.1);
+    vec2 wp=w+vec2(sway, sway*.4)+.9*vec2(fbm(w*.8+t*.05), fbm(w*.8+5.2-t*.04));
+    float f=fbm(wp)-.5*cap-.45*pine(p+vec2(2.,1.)*u);    // shadow falls a little down-right of the tree
+    float grain=h(floor(gl_FragCoord.xy)+floor(t*9.)*13.)-.5;
+    lit=smoothstep(crop.z-crop.w, crop.z+crop.w, f+grain*crop.w*1.6);
+    bg=dark; ink=light;
+  } else if(style<1.5){                                    // halftone dots
+    float c=1.15*u; vec2 cc=(floor(p/c)+.5)*c;
+    lit=step(length(p-cc), .56*c*sqrt(pine(cc)*(1.-cap)));
+  } else if(style<2.5){                                    // numbered grid: each cell prints its brightness 0–9
+    float c=2.6*u; vec2 cc=(floor(p/c)+.5)*c, f=fract(p/c)*c;
+    float v=pine(cc)*(1.-cap), dg=floor(v*9.99), px=c/7.;
+    vec2 gp=floor((f-vec2(2.,1.)*px)/px);
+    float on=gp.x>=0.&&gp.x<3.&&gp.y>=0.&&gp.y<5. ? mod(floor(glyph(dg)/exp2((4.-gp.y)*3.+(2.-gp.x))),2.) : 0.;
+    float fill=step(1.,min(f.x,f.y))*(.3+.6*floor(v*3.)/3.);   // 1px gutters between cells
+    lit=v<.06 ? 0. : mix(fill, fill>.6?0.:1., on);
+  } else if(style<3.5){                                    // circle packing: big rings where the pine is solid, small at its edges
+    lit=0.;
+    for(int i=0;i<3;i++){
+      float c=6.*u/exp2(float(i)); vec2 cc=(floor(p/c)+.5)*c; float v=pine(cc)*(1.-cap);
+      if(v>.3&&(i==2||h(floor(p/c)+float(i)*7.)<.55+.3*v)){ lit=smoothstep(1.2,.2,abs(length(p-cc)-.42*c)); break; }
+    }
+  } else {                                                 // ordered dither
+    lit=step(bayer(p/2.)+.02, pine(floor(p/2.)*2.+1.)*1.15*(1.-cap));
+  }
+  vec3 c=mix(bg, ink, lit)*(.95+.08*n(s/70.));             // uneven ink
+  c=mix(c, vec3(.1), step(.9997, h(floor(p*.4))));         // paper flecks
+  float inside=clamp(d+.5,0.,1.), gap=1.-smoothstep(0.,.25,x);
+  gl_FragColor=vec4(c*inside, inside+(1.-inside)*gap);     // premultiplied: black perforations, then see-through as they tear
+}`;
+// TREE (900×900, ground at the bottom) placed on screen: trunk just left of the vertical perforation so the crown spills over it
+function studyPine(w, hh){
+  const S=hh/790, ox=w*.63-452*S, oy=hh-892*S, P=([x,y])=>[ox+x*S, oy+y*S];
+  const T=TREE.trunk, tw=s=>(16+36*Math.pow(1-s,1.3)+42*Math.exp(-s*20))/2*S;
+  const TP=T.flatMap((pt,i)=>[...P(pt), tw(i/(T.length-1))]);
+  const TF=[], BS=[];
+  TREE.prs.forEach((pr,k)=>{
+    const [cx,cy,rx,ry]=pr.tuft, a=T.reduce((m,q)=>Math.abs(q[1]-pr.y)<Math.abs(m[1]-pr.y)?q:m);
+    TF.push(...P([cx,cy]), rx*S, ry*S); BS.push(...P(a), ...P([cx,cy]));
+    if(k<4) TF.push(...P([a[0]+(cx-a[0])*.5, (a[1]+cy)/2-8]), rx*.42*S, ry*.62*S);  // a smaller clump nearer the trunk
+  });
+  const [ax,ay,arx,ary]=TREE.apex; TF.push(...P([ax,ay]), arx*S, ary*S);
+  return { TP, TF, BS, TOP:oy+(ay-ary)*S };
+}
+let study=null;
+// show the loader (or update its words); safe to call repeatedly
+function studyShow(line1, line2){
+  if(!study){
+    const el=document.createElement("div"); el.id="study"; el.setAttribute("role","status");
+    el.innerHTML='<canvas></canvas><p><span></span><span></span></p>';
+    document.body.append(el);
+    const st=study={el, t0:performance.now(), x:0, raf:0};
+    const gl=el.firstChild.getContext("webgl",{antialias:false}), pg=gl&&fullscreenProgram(gl, STUDY_FS);
+    if(pg){
+      const U=k=>gl.getUniformLocation(pg,k), still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const frame=now=>{
+        const cv=el.firstChild, w=cv.clientWidth, hh=cv.clientHeight, cap=el.querySelector("p");
+        if(cv.width!==w||cv.height!==hh){
+          cv.width=w; cv.height=hh; gl.viewport(0,0,w,hh);
+          const pn=studyPine(w,hh); gl.uniform3fv(U("TP"),pn.TP); gl.uniform4fv(U("TF"),pn.TF); gl.uniform4fv(U("BS"),pn.BS); gl.uniform1f(U("TOP"),pn.TOP);
+        }
+        const t=still?9:(now-st.t0)/1000, x=st.x, um=Math.min(w,hh)/90;
+        gl.uniform2f(U("R"),w,hh); gl.uniform2f(U("C"),w*.7,hh*.49); gl.uniform2f(U("K"),cap.offsetWidth,cap.offsetHeight); gl.uniform1f(U("u"),Math.max(um,5));
+        if(!st.out) st.feed=t*1.6; gl.uniform1f(U("feed"),st.feed||0);
+        gl.uniform1f(U("g"),still?1:1-Math.exp(-t/2.4)); gl.uniform1f(U("beat"),Math.floor(t/1.1));  // the pine grows; styles move on every beat
+        gl.uniform1f(U("t"),t); gl.uniform1f(U("x"),x); gl.drawArrays(gl.TRIANGLES,0,3);
+        const e=Math.max(0,(x-.14)/.79), k=e*e*Math.hypot(w,hh)*.75;  // the caption rides the bottom-left stamp
+        cap.style.transform="translate("+(-k)+"px,"+k+"px)";
+        el.classList.add("gl");
+        st.raf=still?0:requestAnimationFrame(frame);
+      };
+      st.draw=frame; frame(performance.now());
+    }
+  }
+  const sp=study.el.querySelectorAll("p span");
+  sp[0].textContent=line1; sp[0].classList.toggle("wait", !study.out); sp[1].textContent=line2||(ME?"@"+ME.login:"");
+}
+// tear the stamps apart and drop the loader; `found` says how many PRs came back
+function studyHide(found){
+  const s=study; if(!s||s.out) return; s.out=true;
+  if(found!=null) studyShow(found===1?"1 pull request":found+" pull requests", "");
+  const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(()=>{
+    s.el.classList.add("out");
+    const go=performance.now(), tick=now=>{
+      s.x=Math.min(1,(now-go)/1600);
+      if(still||!s.draw||s.x>=1){ s.el.classList.add("gone"); setTimeout(()=>{ cancelAnimationFrame(s.raf); s.el.remove(); },still?0:500); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, found!=null?650:0);
+  study=null;
+}
+
 let wind=null;
 function initWind(){
   if(matchMedia("(prefers-reduced-motion: reduce)").matches) return; // static CSS image stays
   const cv=$("wind"), gl=cv.getContext("webgl",{antialias:false});
   if(!gl) return;
-  const pg=gl.createProgram();
-  [[gl.VERTEX_SHADER,"attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}"],[gl.FRAGMENT_SHADER,WIND_FS]].forEach(([type,src])=>{
-    const sh=gl.createShader(type); gl.shaderSource(sh,src); gl.compileShader(sh); gl.attachShader(pg,sh); });
-  gl.bindAttribLocation(pg,0,"p"); gl.linkProgram(pg);
-  if(!gl.getProgramParameter(pg,gl.LINK_STATUS)) return;
-  gl.useProgram(pg);
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW); // one full-screen triangle
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  const pg=fullscreenProgram(gl, WIND_FS);
+  if(!pg) return;
   const U=k=>gl.getUniformLocation(pg,k), uR=U("R"), uT=U("t"), tex={};
   let raf=0, ready=false;
   const frame=ms=>{
