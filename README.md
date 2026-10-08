@@ -51,7 +51,7 @@ No GitHub CLI, or on a self-hosted copy?
   token endpoint can't be called from a browser. It stores and logs nothing. Pasting a token skips it.
 - **Your token stays local.** It's saved only in your browser's `localStorage`, on your device.
   It is never embedded in the page, the repo, or anywhere else.
-- **Read it yourself.** The entire app is this one [`index.html`](./index.html). There are no
+- **Read it yourself.** The entire app is [`index.html`](./index.html) plus its script, [`app.js`](./app.js). There are no
   dependencies, no bundler, no hidden requests, and no analytics.
 - **Read-only in practice.** The dashboard only reads your PRs and check statuses. (GitHub's `repo`
   scope can't be narrowed to read-only for OAuth apps; paste a fine-grained read-only token if you want that.)
@@ -89,7 +89,7 @@ One-time setup for the maintainer's hosted copy (`worker/`, Cloudflare Workers f
 1. Create a GitHub OAuth App: Homepage and Callback URL = `https://alberthammerich.github.io/pr-dashboard/`.
 2. Put its Client ID in `worker/wrangler.toml` (`CLIENT_ID`), then from `worker/`:
    `npx wrangler secret put CLIENT_SECRET` and `npx wrangler deploy`.
-3. Set `OAUTH.clientId` and `OAUTH.exchange` (the printed `*.workers.dev` URL) in `index.html`.
+3. Set `OAUTH.clientId` and `OAUTH.exchange` (the printed `*.workers.dev` URL) in `app.js`.
 
 Until those are set, the button stays hidden and the page works with pasted tokens.
 
