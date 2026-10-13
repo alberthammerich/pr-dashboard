@@ -150,8 +150,8 @@
   .connect { max-width:min(700px,92vw); margin:clamp(14px,2.2vh,28px) auto 0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:clamp(16px,1.8vw,26px); box-shadow:var(--shadow); }
   .connect .lbl { font-family:var(--mono); font-size:12.5px; color:var(--muted); margin:0 0 9px; display:block; }
   .connect .row { display:flex; gap:10px; flex-wrap:wrap; }
-  .connect input { flex:1; min-width:230px; padding:12px 14px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); font:14px var(--mono); }
-  .connect input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:var(--surface); }
+  .connect input, .connect select { flex:1; min-width:230px; padding:12px 14px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); font:14px var(--mono); }
+  .connect input:focus, .connect select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:var(--surface); }
   .connect .btn { padding:12px 18px; font-size:14px; }
   .help { margin-top:12px; color:var(--muted); font-size:13px; line-height:1.55; }
   .help b { color:var(--text); }
@@ -492,7 +492,7 @@
   }
   .connect .lbl { margin-bottom:20px; color:var(--faint); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
   .connect .row { display:grid; grid-template-columns:1fr auto; gap:8px; }
-  .connect input {
+  .connect input, .connect select {
     min-width:0;
     padding:11px 0;
     border:0;
@@ -501,7 +501,7 @@
     background:transparent;
     font-size:12px;
   }
-  .connect input:focus { border-color:var(--text); box-shadow:none; background:transparent; }
+  .connect input:focus, .connect select:focus { border-color:var(--text); box-shadow:none; background:transparent; }
   .connect .btn { min-height:40px; padding:10px 15px; font-size:12px; }
   .connect .deploy-link { margin-top:8px; width:100%; justify-content:center; }
   .landing-stage .connect {
@@ -564,7 +564,7 @@
   .info code { border-radius:2px; font-size:10px; }
   .err { font-size:11px; }
   .settings-panel { max-width:600px !important; margin:0; }
-  .settings-panel .lbl + input { width:100%; }
+  .settings-panel .lbl + input, .settings-panel .lbl + select { width:100%; }
   .settings-bg { gap:0; margin-bottom:4px; }
   .settings-bg button { padding:9px 14px; border:1px solid var(--line); color:var(--muted); font:500 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; }
   .settings-bg button + button { border-left:0; }
@@ -701,7 +701,7 @@
     <div class="hbtns" id="brandBtns">
       <a class="btn ghost" id="srcLink" href="#" target="_blank" rel="noopener">Source ↗</a>
       <button class="btn primary hide" id="refresh">↻ Refresh</button>
-      <label class="toggle hide" id="autoWrap"><input type="checkbox" id="auto" /> auto 60s</label>
+      <label class="toggle hide" id="autoWrap"><input type="checkbox" id="auto" /> <span id="autoLbl">auto 1m</span></label>
       <button class="btn hide" id="settings" title="Settings & sign out" aria-label="Settings">⚙︎</button>
     </div>
   </div>

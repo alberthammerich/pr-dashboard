@@ -1,6 +1,7 @@
 const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
-const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg", db:"prdash_db" };
+const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg", db:"prdash_db", every:"prdash_every" };
+const EVERY = [[1,"Every minute"],[5,"Every 5 minutes"],[15,"Every 15 minutes"],[30,"Every 30 minutes"],[60,"Once an hour"]];
 const HOURS_DEFAULT = 48;
 // "Sign in with GitHub": empty clientId hides the button. Only works on the origin the OAuth App's callback is registered for,
 // so self-deployed copies fall back to pasting a token.
@@ -251,6 +252,12 @@ async function oauthFinish(){
 }
 
 /* ---------- settings ---------- */
+const every = () => { const m=Number(get(LS.every,1)); return EVERY.some(e=>e[0]===m)?m:1; };
+function setAuto(){
+  clearInterval(autoTimer); autoTimer=null;
+  const m=every(); $("autoLbl").textContent="auto "+(m<60?m+"m":"1h");
+  if($("auto").checked) autoTimer=setInterval(load,m*60000);
+}
 function showSettings(){
   const author=get(LS.author,"")||(ME&&ME.login)||"", hours=get(LS.hours,HOURS_DEFAULT);
   $("main").innerHTML =
@@ -258,11 +265,12 @@ function showSettings(){
     +'<div class="connect settings-panel"><span class="lbl">Background</span><span class="bg-switch settings-bg" role="group" aria-label="Background">'+BG_BUTTONS+'</span>'
     +'<span class="lbl" style="margin-top:20px">PR author / defaults to you</span><input id="sAuth" value="'+esc(author)+'" />'
     +'<span class="lbl" style="margin-top:20px">Closed PR window / hours</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
+    +'<span class="lbl" style="margin-top:20px">Auto-refresh interval</span><select id="sEvery">'+EVERY.map(([m,t])=>'<option value="'+m+'"'+(m===every()?' selected':'')+'>'+t+'</option>').join("")+'</select>'
     +'<div class="row" style="margin-top:24px"><button class="btn primary" id="sSave">Save and reload</button>'
     +'<button class="btn" id="sOut">Sign out</button></div>'
     +(get(LS.refresh,"")?'<div class="help" style="margin-top:16px">Missing PRs from an organization? <a href="https://github.com/settings/connections/applications/'+OAUTH.clientId+'" target="_blank" rel="noopener">Choose which organizations PR Dashboard can see ↗</a></div>':'')
     +'</div>';
-  $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); localStorage.removeItem(LS.db); DB=null; load(); };
+  $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); localStorage.setItem(LS.every, $("sEvery").value); setAuto(); localStorage.removeItem(LS.db); DB=null; load(); };
   $("sOut").onclick=signOut;
   $("sBack").onclick=()=>DB?render():load();
   wireBgSwitch();
@@ -372,7 +380,8 @@ $("chips").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(
   activeFilter=c.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===c)); render(); });
 $("refresh").addEventListener("click", load);
 $("settings").addEventListener("click", showSettings);
-$("auto").addEventListener("change", e=>{ if(e.target.checked){ autoTimer=setInterval(load,60000); } else clearInterval(autoTimer); });
+$("auto").addEventListener("change", setAuto);
+setAuto();
 document.addEventListener("keydown", e=>{ const q=$("q"); if(e.key==="/"&&document.activeElement!==q&&q&&q.offsetParent){ e.preventDefault(); q.focus(); } });
 
 /* ---------- landing background: wind over the meadow, or flowers behind reeded glass ---------- */
