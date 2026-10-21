@@ -71,7 +71,8 @@ function rollup(checks){ if(!checks.length) return "none";
 // One GraphQL search returns each PR with its CI, instead of 3 REST calls per PR.
 const PR_QUERY=`query($q:String!){ search(query:$q, type:ISSUE, first:100){ nodes{ ... on PullRequest{
   number title url state isDraft additions deletions createdAt updatedAt closedAt headRefName
-  repository{nameWithOwner} comments{totalCount} reviewRequests{totalCount}
+  repository{nameWithOwner} comments{totalCount} reviewRequests{totalCount} reviewDecision
+  latestOpinionatedReviews(first:20){ nodes{ state } }
   commits(last:1){ nodes{ commit{ statusCheckRollup{ contexts(first:100){ nodes{ __typename
     ... on CheckRun{ name status conclusion detailsUrl checkSuite{ app{ name } } }
     ... on StatusContext{ context state targetUrl } } } } } } } } } } }`;
@@ -85,8 +86,11 @@ function toPR(n){
   const checks=normChecks(
     ctx.filter(x=>x.__typename==="CheckRun").map(x=>({ name:x.name, status:x.status, conclusion:x.conclusion, details_url:x.detailsUrl, app:x.checkSuite&&x.checkSuite.app })),
     ctx.filter(x=>x.__typename==="StatusContext").map(x=>({ context:x.context, state:x.state, target_url:x.targetUrl })));
+  const reviews=n.latestOpinionatedReviews.nodes.map(r=>r.state);
+  // reviewDecision is null on repos without required reviews, so fall back to the latest reviews.
+  const decision=n.reviewDecision || (reviews.includes("APPROVED")&&!reviews.includes("CHANGES_REQUESTED")?"APPROVED":n.reviewRequests.totalCount?"REVIEW_REQUIRED":"");
   return { number:n.number, title:n.title, url:n.url, repo:n.repository.nameWithOwner, state:n.state, isDraft:n.isDraft,
-    reviewDecision:n.reviewRequests.totalCount?"REVIEW_REQUIRED":"", branch:n.headRefName, additions:n.additions, deletions:n.deletions,
+    reviewDecision:decision, branch:n.headRefName, additions:n.additions, deletions:n.deletions,
     comments:n.comments.totalCount, createdAt:n.createdAt, updatedAt:n.updatedAt, closedAt:n.closedAt, ci:rollup(checks), checks };
 }
 async function collect(){
@@ -106,7 +110,9 @@ async function collect(){
 function stateBadge(pr){ if(pr.state==="MERGED")return '<span class="badge b-merged">merged</span>';
   if(pr.state==="CLOSED")return '<span class="badge b-closed">closed</span>';
   if(pr.isDraft)return '<span class="badge b-draft">draft</span>'; return '<span class="badge b-open">open</span>'; }
-function reviewBadge(pr){ return (pr.state==="OPEN"&&pr.reviewDecision==="REVIEW_REQUIRED")?'<span class="badge b-review">needs review</span>':""; }
+function reviewBadge(pr){ if(pr.state!=="OPEN")return "";
+  if(pr.reviewDecision==="APPROVED")return '<span class="badge b-approved">approved</span>';
+  return pr.reviewDecision==="REVIEW_REQUIRED"?'<span class="badge b-review">needs review</span>':""; }
 function matches(pr, term){
   if(activeFilter==="open"&&pr.state!=="OPEN") return false;
   if(activeFilter==="closed"&&pr.state==="OPEN") return false;
