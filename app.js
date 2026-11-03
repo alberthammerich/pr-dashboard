@@ -1,6 +1,6 @@
 const REPO_URL = "https://github.com/alberthammerich/pr-dashboard";
 const SRC = REPO_URL.replace("https://github.com/","");
-const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg", db:"prdash_db", every:"prdash_every" };
+const LS = { token:"prdash_token", refresh:"prdash_refresh", exp:"prdash_exp", author:"prdash_author", hours:"prdash_hours", me:"prdash_me", bg:"prdash_bg", db:"prdash_db", every:"prdash_every", openIn:"prdash_open_in" };
 const EVERY = [[1,"Every minute"],[5,"Every 5 minutes"],[15,"Every 15 minutes"],[30,"Every 30 minutes"],[60,"Once an hour"]];
 const HOURS_DEFAULT = 48;
 // "Sign in with GitHub": empty clientId hides the button. Only works on the origin the OAuth App's callback is registered for,
@@ -107,6 +107,13 @@ async function collect(){
 }
 
 /* ---------- render dashboard ---------- */
+function prReviewUrl(pr){
+  const url=safeUrl(pr.url);
+  if(pr.state==="OPEN" && get(LS.openIn,"browser")==="desktop" && /^https:\/\/github\.com\/[^/?#]+\/[^/?#]+\/pull\/[1-9][0-9]*$/.test(url)){
+    return url.replace("https://github.com/","github-desktop-review://pull/");
+  }
+  return safeUrl(url+"/files");
+}
 function stateBadge(pr){ if(pr.state==="MERGED")return '<span class="badge b-merged">merged</span>';
   if(pr.state==="CLOSED")return '<span class="badge b-closed">closed</span>';
   if(pr.isDraft)return '<span class="badge b-draft">draft</span>'; return '<span class="badge b-open">open</span>'; }
@@ -160,10 +167,12 @@ function render(){
           +(safeUrl(c.url)?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.name)+'</a>':esc(c.name))
           +(c.workflow?' <span class="wf">· '+esc(c.workflow)+'</span>':'')+'</div>').join(""); }
       const stats=(pr.additions!=null)?'<span class="stat">+'+pr.additions+' −'+pr.deletions+'</span>':'';
+      const review=prReviewUrl(pr), desktop=review.startsWith("github-desktop-review:");
       pd.innerHTML='<summary><span class="ci-dot ci-'+esc(pr.ci)+'" title="CI: '+pr.ci+'">'+(CIICON[pr.ci]||"·")+'</span>'
-        +'<a class="pr-title" href="'+esc(safeUrl(pr.url+"/files"))+'" target="_blank" rel="noopener">'+esc(pr.title)+'</a>'
+        +'<a class="pr-title" href="'+esc(review)+'"'+(desktop?'':' target="_blank" rel="noopener"')+'>'+esc(pr.title)+'</a>'
         +'<span class="pr-num">#'+pr.number+(pr.branch?' · '+esc(pr.branch):'')+'</span>'
         +stateBadge(pr)+reviewBadge(pr)+'<span class="spacer"></span>'+stats
+        +(desktop?'<a class="btn ghost web-diff" href="'+esc(safeUrl(pr.url+"/files"))+'" target="_blank" rel="noopener">Web diff</a>':'')
         +'<span class="when">'+rel(pr.state==="OPEN"?pr.updatedAt:pr.closedAt)+'</span></summary>'
         +'<div class="checks">'+checksHtml+'</div>';
       d.appendChild(pd);
@@ -271,12 +280,14 @@ function showSettings(){
     +'<div class="connect settings-panel"><span class="lbl">Background</span><span class="bg-switch settings-bg" role="group" aria-label="Background">'+BG_BUTTONS+'</span>'
     +'<span class="lbl" style="margin-top:20px">PR author / defaults to you</span><input id="sAuth" value="'+esc(author)+'" />'
     +'<span class="lbl" style="margin-top:20px">Closed PR window / hours</span><input id="sHrs" type="number" value="'+esc(String(hours))+'" />'
+    +'<label class="lbl" for="sOpenIn" style="margin-top:20px">Open PRs in</label><select id="sOpenIn"><option value="browser"'+(get(LS.openIn,"browser")!=="desktop"?' selected':'')+'>Browser · Files changed</option><option value="desktop"'+(get(LS.openIn,"browser")==="desktop"?' selected':'')+'>GitHub Desktop</option></select>'
+    +'<div class="help">Desktop requires the local GitHub Desktop PR Review helper. Closed PRs open in the browser.</div>'
     +'<span class="lbl" style="margin-top:20px">Auto-refresh interval</span><select id="sEvery">'+EVERY.map(([m,t])=>'<option value="'+m+'"'+(m===every()?' selected':'')+'>'+t+'</option>').join("")+'</select>'
     +'<div class="row" style="margin-top:24px"><button class="btn primary" id="sSave">Save and reload</button>'
     +'<button class="btn" id="sOut">Sign out</button></div>'
     +(get(LS.refresh,"")?'<div class="help" style="margin-top:16px">Missing PRs from an organization? <a href="https://github.com/settings/connections/applications/'+OAUTH.clientId+'" target="_blank" rel="noopener">Choose which organizations PR Dashboard can see ↗</a></div>':'')
     +'</div>';
-  $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); localStorage.setItem(LS.every, $("sEvery").value); setAuto(); localStorage.removeItem(LS.db); DB=null; load(); };
+  $("sSave").onclick=()=>{ localStorage.setItem(LS.author, $("sAuth").value.trim()); localStorage.setItem(LS.hours, String(Number($("sHrs").value)||HOURS_DEFAULT)); localStorage.setItem(LS.every, $("sEvery").value); localStorage.setItem(LS.openIn, $("sOpenIn").value); setAuto(); localStorage.removeItem(LS.db); DB=null; load(); };
   $("sOut").onclick=signOut;
   $("sBack").onclick=()=>DB?render():load();
   wireBgSwitch();
