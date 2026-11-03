@@ -22,6 +22,7 @@ open and just-closed PRs with their CI status. So I made it.
 - **At-a-glance summary** — big-number cards for open, closed-in-48h, CI failing, and running.
 - **Per-repo grouping** with failing/running badges on each repo.
 - **Live CI** per PR (✓ pass · × fail · ◌ running) — expand any PR to see every check, linked to its run.
+- **Open in Desktop** — check out an open PR in GitHub Desktop, including PRs from forks. GitHub Desktop must be installed.
 - **Instant search** across title / repo / branch / `#number`, plus filter chips (open · closed · failing · running).
 - **One-click deploy** to your own GitHub (see below), plus **Refresh** and optional **auto-refresh** every 60s.
 - Closed-PR window configurable in ⚙︎ Settings (default 48h).
