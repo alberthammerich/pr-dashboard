@@ -70,7 +70,7 @@ function rollup(checks){ if(!checks.length) return "none";
   if(checks.some(c=>c.status==="pass")) return "pass"; return "none"; }
 // One GraphQL search returns each PR with its CI, instead of 3 REST calls per PR.
 const PR_QUERY=`query($q:String!){ search(query:$q, type:ISSUE, first:100){ nodes{ ... on PullRequest{
-  number title url state isDraft additions deletions createdAt updatedAt closedAt headRefName
+  number title url state isDraft additions deletions createdAt updatedAt closedAt headRefName isCrossRepository
   repository{nameWithOwner} comments{totalCount} reviewRequests{totalCount} reviewDecision
   latestOpinionatedReviews(first:20){ nodes{ state } }
   commits(last:1){ nodes{ commit{ statusCheckRollup{ contexts(first:100){ nodes{ __typename
@@ -90,7 +90,7 @@ function toPR(n){
   // reviewDecision is null on repos without required reviews, so fall back to the latest reviews.
   const decision=n.reviewDecision || (reviews.includes("APPROVED")&&!reviews.includes("CHANGES_REQUESTED")?"APPROVED":n.reviewRequests.totalCount?"REVIEW_REQUIRED":"");
   return { number:n.number, title:n.title, url:n.url, repo:n.repository.nameWithOwner, state:n.state, isDraft:n.isDraft,
-    reviewDecision:decision, branch:n.headRefName, additions:n.additions, deletions:n.deletions,
+    reviewDecision:decision, branch:n.headRefName, isCrossRepository:n.isCrossRepository, additions:n.additions, deletions:n.deletions,
     comments:n.comments.totalCount, createdAt:n.createdAt, updatedAt:n.updatedAt, closedAt:n.closedAt, ci:rollup(checks), checks };
 }
 async function collect(){
@@ -107,6 +107,12 @@ async function collect(){
 }
 
 /* ---------- render dashboard ---------- */
+function desktopUrl(pr){
+  if(pr.state!=="OPEN") return "";
+  // Cached PRs lack fork metadata until refresh; the PR ref works for either kind.
+  const query=new URLSearchParams(pr.isCrossRepository===false?{branch:pr.branch}:{pr:String(pr.number),branch:"pr/"+pr.number});
+  return "x-github-client://openRepo/https://github.com/"+pr.repo+"?"+query;
+}
 function stateBadge(pr){ if(pr.state==="MERGED")return '<span class="badge b-merged">merged</span>';
   if(pr.state==="CLOSED")return '<span class="badge b-closed">closed</span>';
   if(pr.isDraft)return '<span class="badge b-draft">draft</span>'; return '<span class="badge b-open">open</span>'; }
@@ -160,10 +166,12 @@ function render(){
           +(safeUrl(c.url)?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.name)+'</a>':esc(c.name))
           +(c.workflow?' <span class="wf">· '+esc(c.workflow)+'</span>':'')+'</div>').join(""); }
       const stats=(pr.additions!=null)?'<span class="stat">+'+pr.additions+' −'+pr.deletions+'</span>':'';
+      const desktop=desktopUrl(pr);
       pd.innerHTML='<summary><span class="ci-dot ci-'+esc(pr.ci)+'" title="CI: '+pr.ci+'">'+(CIICON[pr.ci]||"·")+'</span>'
         +'<a class="pr-title" href="'+esc(safeUrl(pr.url))+'" target="_blank" rel="noopener">'+esc(pr.title)+'</a>'
         +'<span class="pr-num">#'+pr.number+(pr.branch?' · '+esc(pr.branch):'')+'</span>'
         +stateBadge(pr)+reviewBadge(pr)+'<span class="spacer"></span>'+stats
+        +(desktop?'<a class="btn ghost desktop-link" href="'+esc(desktop)+'" aria-label="Open #'+pr.number+' in GitHub Desktop" title="Check out this pull request in GitHub Desktop">Open in Desktop</a>':'')
         +'<span class="when">'+rel(pr.state==="OPEN"?pr.updatedAt:pr.closedAt)+'</span></summary>'
         +'<div class="checks">'+checksHtml+'</div>';
       d.appendChild(pd);
