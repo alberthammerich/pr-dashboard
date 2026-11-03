@@ -22,7 +22,7 @@ open and just-closed PRs with their CI status. So I made it.
 - **At-a-glance summary** — big-number cards for open, closed-in-48h, CI failing, and running.
 - **Per-repo grouping** with failing/running badges on each repo.
 - **Live CI** per PR (✓ pass · × fail · ◌ running) — expand any PR to see every check, linked to its run.
-- **Full PR diffs** — PR titles open GitHub’s Files changed view against the PR’s actual target branch.
+- **Full PR diffs** — PR titles open GitHub’s Files changed view against the PR’s actual target branch. Choose **GitHub Desktop** in Settings to use the local PR Review helper for open PRs; a Web diff link stays available.
 - **Instant search** across title / repo / branch / `#number`, plus filter chips (open · closed · failing · running).
 - **One-click deploy** to your own GitHub (see below), plus **Refresh** and optional **auto-refresh** every 60s.
 - Closed-PR window configurable in ⚙︎ Settings (default 48h).
