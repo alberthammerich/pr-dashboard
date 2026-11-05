@@ -393,7 +393,39 @@
   .pr-title { min-width:220px; color:var(--text); font-size:13px; font-weight:600; }
   .pr-title:hover { color:var(--text); text-decoration:underline; }
   .pr-num { max-width:300px; overflow:hidden; text-overflow:ellipsis; color:var(--faint); font-size:10px; white-space:nowrap; }
-  .web-diff { flex-shrink:0; padding:5px 8px; font-size:11px; white-space:nowrap; }
+  .desktop-review {
+    position:relative; isolation:isolate; overflow:hidden; flex-shrink:0;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    min-height:34px; padding:0 11px; border-radius:18px;
+    color:#fff; background:#25382e; text-decoration:none; white-space:nowrap;
+    font:600 11px/1 var(--sans); box-shadow:0 3px 8px rgba(23,23,19,.14);
+    transition:border-radius .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.16,1,.3,1);
+  }
+  .desktop-review::before {
+    content:""; position:absolute; inset:0; z-index:-1;
+    background-image:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),var(--review-landscape,url("assets/dunes.jpg"));
+    background-size:cover; background-position:center 62%; transform:scale(1.22);
+    transition:transform .65s cubic-bezier(.16,1,.3,1);
+  }
+  .desktop-review svg { width:16px; height:16px; flex-shrink:0; }
+  .desktop-label { display:flex; align-items:center; }
+  .desktop-expand { display:inline-block; max-width:0; overflow:hidden; opacity:0; white-space:pre;
+    transition:max-width .38s cubic-bezier(.16,1,.3,1), opacity .2s ease-out;
+  }
+  .desktop-review .desktop-arrow { width:0; opacity:0; transform:translateX(-4px);
+    transition:width .38s cubic-bezier(.16,1,.3,1), opacity .2s ease-out, transform .38s cubic-bezier(.16,1,.3,1);
+  }
+  .desktop-review:is(:hover,:focus-visible) { color:#fff; border-radius:11px; box-shadow:0 5px 14px rgba(23,23,19,.2); }
+  .desktop-review:is(:hover,:focus-visible)::before { transform:scale(1); }
+  .desktop-review:is(:hover,:focus-visible) .desktop-expand { max-width:45px; opacity:1; }
+  .desktop-review:is(:hover,:focus-visible) .desktop-arrow { width:16px; opacity:1; transform:none; }
+  .desktop-review:focus-visible { outline:2px solid var(--text); outline-offset:3px; }
+  .desktop-review:active { box-shadow:0 1px 3px rgba(23,23,19,.18); }
+  @media (hover:none) { .desktop-review { min-height:44px; } }
+  @media (prefers-reduced-motion:reduce) {
+    .desktop-review, .desktop-review::before, .desktop-expand, .desktop-review .desktop-arrow { transition:none; }
+    .desktop-review::before { transform:none; }
+  }
   .badge {
     padding:2px 6px;
     border-radius:2px;
@@ -639,6 +671,7 @@
     .statcard:nth-child(2) { border-right:0; }
     .statcard:nth-child(-n+2) { border-bottom:1px solid var(--line); }
     .pr-num { display:none; }
+    .desktop-review { min-height:44px; }
     details.pr > summary { flex-wrap:wrap; }
     .pr-title { min-width:calc(100% - 38px); }
     .spacer { display:none; }
